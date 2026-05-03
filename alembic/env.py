@@ -1,16 +1,16 @@
 import sys
 import os
 from dotenv import load_dotenv
+
 load_dotenv()
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from logging.config import fileConfig
+from logging.config import fileConfig  # noqa: E402
+from sqlalchemy import engine_from_config  # noqa: E402
+from sqlalchemy import pool  # noqa: E402
+from alembic import context  # noqa: E402
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
-from alembic import context
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
