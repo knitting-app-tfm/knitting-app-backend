@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     RAVELRY_CLIENT_ID: str
     GROQ_API_KEY: str
     STORAGE_BASE_PATH: str = "/app/storage"
+    USE_MOCK_LLM: bool = False
 
 
 settings = Settings()

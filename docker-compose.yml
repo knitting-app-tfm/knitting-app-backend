@@ -29,6 +29,7 @@ services:
       - RAVELRY_CLIENT_ID=tuclientid
       - GROQ_API_KEY=${GROQ_API_KEY}
       - STORAGE_BASE_PATH=/app/storage
+      - USE_MOCK_LLM=true  # set to true to skip the LLM call and return mock data
     depends_on:
       - db
 

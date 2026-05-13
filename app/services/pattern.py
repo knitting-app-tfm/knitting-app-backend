@@ -71,8 +71,11 @@ class PatternService:
             content, subdir="original", file_uuid=file_uuid, suffix=".pdf"
         )
 
-        text = self._extract_text(content)
-        parsed, json_str = self._call_llm(text)
+        if settings.USE_MOCK_LLM:
+            parsed, json_str = self._mock_response()
+        else:
+            text = self._extract_text(content)
+            parsed, json_str = self._call_llm(text)
 
         parsed_path = self._save_text(
             json_str, subdir="parsed", file_uuid=file_uuid, suffix=".json"
@@ -99,6 +102,30 @@ class PatternService:
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------
+
+    def _mock_response(self) -> tuple[dict, str]:
+        mock = {
+            "title": "Mock Knitting Pattern",
+            "craft": "KNITTING",
+            "gauge_stitches": 22.0,
+            "gauge_rows": 30.0,
+            "gauge_size": 10.0,
+            "gauge_unit": "CM",
+            "needle_size": "4mm",
+            "yarns": [
+                {
+                    "label": "Main",
+                    "yarn_weight": "DK",
+                    "meters_per_unit": 200.0,
+                    "grams_per_unit": 100.0,
+                    "grams_needed": 300.0,
+                    "strands": 1,
+                }
+            ],
+        }
+        json_str = json.dumps(mock, ensure_ascii=False)
+        parsed = self._normalize(mock)
+        return parsed, json_str
 
     def _validate(self, content: bytes, content_type: str | None) -> None:
         if content_type != "application/pdf":
