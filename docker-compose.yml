@@ -22,10 +22,14 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+      - storage_data:/app/storage
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/knitting
       - SECRET_KEY=supersecretkey
       - RAVELRY_CLIENT_ID=tuclientid
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - STORAGE_BASE_PATH=/app/storage
+      - USE_MOCK_LLM=true  # set to true to skip the LLM call and return mock data
     depends_on:
       - db
 
@@ -42,3 +46,4 @@ services:
 
 volumes:
   postgres_data:
+  storage_data:

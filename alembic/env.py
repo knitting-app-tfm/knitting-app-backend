@@ -29,6 +29,7 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 from app.core.database import Base  # noqa: E402
 from app.models.user import User  # noqa: E402, F401
+from app.models.pattern import Pattern, PatternYarn  # noqa: E402, F401
 
 target_metadata = Base.metadata
 
