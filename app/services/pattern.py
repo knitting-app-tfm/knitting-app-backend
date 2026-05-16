@@ -27,6 +27,10 @@ class FileTooLargeError(ValueError):
     pass
 
 
+class EmptyTextError(ValueError):
+    pass
+
+
 _MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 _LLM_PROMPT = """You are a knitting and crochet pattern parser.
@@ -60,33 +64,76 @@ class PatternService:
     def __init__(self) -> None:
         self._client = Groq(api_key=settings.GROQ_API_KEY)
 
+    # ------------------------------------------------------------------
+    # Public interface
+    # ------------------------------------------------------------------
+
     def import_from_pdf(
         self, db: Session, content: bytes, content_type: str | None
     ) -> Pattern:
-        self._validate(content, content_type)
-
+        self._validate_pdf(content, content_type)
         file_uuid = str(uuid.uuid4())
-
-        original_path = self._save_bytes(
-            content, subdir="original", file_uuid=file_uuid, suffix=".pdf"
+        original_path = self._save_file(content, "original", file_uuid, ".pdf")
+        text = self._extract_text(content)
+        parsed, json_str = self._get_parsed(text)
+        parsed_path = self._save_file(json_str, "parsed", file_uuid, ".json")
+        return self._persist_pattern(
+            db, parsed, original_path, parsed_path, PatternSource.PDF
         )
 
-        if settings.USE_MOCK_LLM:
-            parsed, json_str = self._mock_response()
+    def import_from_text(self, db: Session, text: str) -> Pattern:
+        if not text or not text.strip():
+            raise EmptyTextError("Text cannot be empty")
+        file_uuid = str(uuid.uuid4())
+        original_path = self._save_file(text, "original", file_uuid, ".txt")
+        parsed, json_str = self._get_parsed(text)
+        parsed_path = self._save_file(json_str, "parsed", file_uuid, ".json")
+        return self._persist_pattern(
+            db, parsed, original_path, parsed_path, PatternSource.TEXT
+        )
+
+    # ------------------------------------------------------------------
+    # Private helpers
+    # ------------------------------------------------------------------
+
+    def _validate_pdf(self, content: bytes, content_type: str | None) -> None:
+        if content_type != "application/pdf":
+            raise InvalidFileTypeError("Only PDF files are allowed")
+        if len(content) > _MAX_FILE_SIZE:
+            raise FileTooLargeError("File size must not exceed 10MB")
+
+    def _save_file(
+        self, content: bytes | str, subdir: str, file_uuid: str, suffix: str
+    ) -> str:
+        path = Path(settings.STORAGE_BASE_PATH) / subdir / f"{file_uuid}{suffix}"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if isinstance(content, bytes):
+            path.write_bytes(content)
         else:
-            text = self._extract_text(content)
-            parsed, json_str = self._call_llm(text)
+            path.write_text(content, encoding="utf-8")
+        return f"storage/{subdir}/{file_uuid}{suffix}"
 
-        parsed_path = self._save_text(
-            json_str, subdir="parsed", file_uuid=file_uuid, suffix=".json"
-        )
+    def _extract_text(self, content: bytes) -> str:
+        return extract_text(BytesIO(content))
 
+    def _get_parsed(self, text: str) -> tuple[dict, str]:
+        if settings.USE_MOCK_LLM:
+            return self._mock_response()
+        return self._call_llm(text)
+
+    def _persist_pattern(
+        self,
+        db: Session,
+        parsed: dict,
+        original_path: str,
+        parsed_path: str,
+        source: PatternSource,
+    ) -> Pattern:
         yarns_data = parsed.pop("yarns", [])
-
         return pattern_repository.create(
             db,
             yarns_data=yarns_data,
-            source=PatternSource.PDF,
+            source=source,
             status=PatternStatus.IMPORTED,
             original_file_path=original_path,
             parsed_json_path=parsed_path,
@@ -99,9 +146,23 @@ class PatternService:
             needle_size=parsed.get("needle_size"),
         )
 
-    # ------------------------------------------------------------------
-    # Private helpers
-    # ------------------------------------------------------------------
+    def _call_llm(self, text: str) -> tuple[dict, str]:
+        try:
+            response = self._client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "user", "content": _LLM_PROMPT + text}],
+                response_format={"type": "json_object"},
+            )
+            json_str = response.choices[0].message.content
+            if json_str is None:
+                raise ValueError("Empty response from LLM")
+            raw = json.loads(json_str)
+            parsed = self._normalize(raw)
+            return parsed, json.dumps(parsed, ensure_ascii=False)
+        except Exception:
+            # AC4: if LLM fails, return empty metadata — user fills in manually
+            fallback = {"title": "Unknown", "craft": None, "yarns": []}
+            return fallback, json.dumps(fallback)
 
     def _mock_response(self) -> tuple[dict, str]:
         mock = {
@@ -126,45 +187,6 @@ class PatternService:
         json_str = json.dumps(mock, ensure_ascii=False)
         parsed = self._normalize(mock)
         return parsed, json_str
-
-    def _validate(self, content: bytes, content_type: str | None) -> None:
-        if content_type != "application/pdf":
-            raise InvalidFileTypeError("Only PDF files are allowed")
-        if len(content) > _MAX_FILE_SIZE:
-            raise FileTooLargeError("File size must not exceed 10MB")
-
-    def _save_bytes(
-        self, content: bytes, subdir: str, file_uuid: str, suffix: str
-    ) -> str:
-        path = Path(settings.STORAGE_BASE_PATH) / subdir / f"{file_uuid}{suffix}"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(content)
-        return f"storage/{subdir}/{file_uuid}{suffix}"
-
-    def _save_text(self, content: str, subdir: str, file_uuid: str, suffix: str) -> str:
-        path = Path(settings.STORAGE_BASE_PATH) / subdir / f"{file_uuid}{suffix}"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content, encoding="utf-8")
-        return f"storage/{subdir}/{file_uuid}{suffix}"
-
-    def _extract_text(self, content: bytes) -> str:
-        return extract_text(BytesIO(content))
-
-    def _call_llm(self, text: str) -> tuple[dict, str]:
-        try:
-            response = self._client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "user", "content": _LLM_PROMPT + text}],
-                response_format={"type": "json_object"},
-            )
-            json_str = response.choices[0].message.content
-            raw = json.loads(json_str)
-            parsed = self._normalize(raw)
-            return parsed, json.dumps(parsed, ensure_ascii=False)
-        except Exception:
-            # AC4: if LLM fails, return empty metadata — user fills in manually
-            fallback = {"title": "Unknown", "craft": None, "yarns": []}
-            return fallback, json.dumps(fallback)
 
     def _normalize(self, raw: dict) -> dict:
         try:
