@@ -12,6 +12,7 @@ from app.models.pattern import (
     YarnWeight,
 )
 from app.services.pattern import (
+    EmptyTextError,
     FileTooLargeError,
     InvalidFileTypeError,
     PatternService,
@@ -37,18 +38,18 @@ def service():
 class TestValidate:
     def test_raises_invalid_type_for_non_pdf(self, service):
         with pytest.raises(InvalidFileTypeError):
-            service._validate(b"data", "image/png")
+            service._validate_pdf(b"data", "image/png")
 
     def test_raises_invalid_type_when_none(self, service):
         with pytest.raises(InvalidFileTypeError):
-            service._validate(b"data", None)
+            service._validate_pdf(b"data", None)
 
     def test_raises_too_large(self, service):
         with pytest.raises(FileTooLargeError):
-            service._validate(b"x" * (_MAX_FILE_SIZE + 1), _PDF_CONTENT_TYPE)
+            service._validate_pdf(b"x" * (_MAX_FILE_SIZE + 1), _PDF_CONTENT_TYPE)
 
     def test_passes_for_valid_input(self, service):
-        service._validate(_PDF_BYTES, _PDF_CONTENT_TYPE)  # must not raise
+        service._validate_pdf(_PDF_BYTES, _PDF_CONTENT_TYPE)  # must not raise
 
 
 class TestExtractText:
@@ -150,16 +151,14 @@ class TestImportFromPdf:
             patch("app.services.pattern.uuid.uuid4", return_value=fixed_uuid),
             patch.object(
                 service,
-                "_save_bytes",
-                return_value=f"storage/original/{fixed_uuid}.pdf",
+                "_save_file",
+                side_effect=[
+                    f"storage/original/{fixed_uuid}.pdf",
+                    f"storage/parsed/{fixed_uuid}.json",
+                ],
             ),
             patch("app.services.pattern.extract_text", return_value="text"),
             patch.object(service, "_call_llm", return_value=(parsed_data, "{}")),
-            patch.object(
-                service,
-                "_save_text",
-                return_value=f"storage/parsed/{fixed_uuid}.json",
-            ),
             patch("app.services.pattern.pattern_repository") as mock_repo,
         ):
             mock_repo.create.return_value = mock_pattern
@@ -190,3 +189,61 @@ class TestImportFromPdf:
         oversized = b"x" * (_MAX_FILE_SIZE + 1)
         with pytest.raises(FileTooLargeError):
             service.import_from_pdf(MagicMock(), oversized, _PDF_CONTENT_TYPE)
+
+
+class TestImportFromText:
+    def test_calls_repository_with_correct_args(self, service):
+        fixed_uuid = uuid.UUID("bbbbbbbb-cccc-dddd-eeee-ffffffffffff")
+        db = MagicMock()
+        mock_pattern = MagicMock()
+        parsed_data = {
+            "title": "Hand-knit Scarf",
+            "craft": CraftType.KNITTING,
+            "gauge_stitches": 18.0,
+            "gauge_rows": None,
+            "gauge_size": None,
+            "gauge_unit": None,
+            "needle_size": "5mm",
+            "yarns": [],
+        }
+
+        with (
+            patch("app.services.pattern.uuid.uuid4", return_value=fixed_uuid),
+            patch.object(
+                service,
+                "_save_file",
+                side_effect=[
+                    f"storage/original/{fixed_uuid}.txt",
+                    f"storage/parsed/{fixed_uuid}.json",
+                ],
+            ),
+            patch.object(service, "_call_llm", return_value=(parsed_data, "{}")),
+            patch("app.services.pattern.pattern_repository") as mock_repo,
+        ):
+            mock_repo.create.return_value = mock_pattern
+            result = service.import_from_text(db, "cast on 20 stitches...")
+
+        mock_repo.create.assert_called_once_with(
+            db,
+            yarns_data=[],
+            source=PatternSource.TEXT,
+            status=PatternStatus.IMPORTED,
+            original_file_path=f"storage/original/{fixed_uuid}.txt",
+            parsed_json_path=f"storage/parsed/{fixed_uuid}.json",
+            title="Hand-knit Scarf",
+            craft=CraftType.KNITTING,
+            gauge_stitches=18.0,
+            gauge_rows=None,
+            gauge_size=None,
+            gauge_unit=None,
+            needle_size="5mm",
+        )
+        assert result is mock_pattern
+
+    def test_raises_empty_text_error_for_empty_string(self, service):
+        with pytest.raises(EmptyTextError):
+            service.import_from_text(MagicMock(), "")
+
+    def test_raises_empty_text_error_for_whitespace_only(self, service):
+        with pytest.raises(EmptyTextError):
+            service.import_from_text(MagicMock(), "   \n\t  ")
