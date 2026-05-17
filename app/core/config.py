@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str
     STORAGE_BASE_PATH: str = "/app/storage"
     USE_MOCK_LLM: bool = False
+    FIREBASE_SERVICE_ACCOUNT_PATH: str = "firebase-service-account.json"
+    FIREBASE_WEB_API_KEY: str = ""
 
 
 settings = Settings()
