@@ -68,4 +68,4 @@ class TestPatternRepositoryCreate:
         yarns = added_objects[1:]
         assert isinstance(pattern, Pattern)
         assert all(isinstance(y, PatternYarn) for y in yarns)
-        assert all(y.pattern_id == pattern.id for y in yarns)
+        assert all(y.pattern_id is pattern.id for y in yarns)
