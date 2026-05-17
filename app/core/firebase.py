@@ -14,7 +14,8 @@ if not _path.is_absolute():
 try:
     firebase_admin.get_app()
 except ValueError:
-    firebase_admin.initialize_app(credentials.Certificate(str(_path)))
+    if _path.exists():
+        firebase_admin.initialize_app(credentials.Certificate(str(_path)))
 
 
 def verify_firebase_token(token: str) -> dict:
