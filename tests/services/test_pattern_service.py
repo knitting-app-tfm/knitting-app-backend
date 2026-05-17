@@ -158,7 +158,7 @@ class TestImportFromPdf:
                 ],
             ),
             patch("app.services.pattern.extract_text", return_value="text"),
-            patch.object(service, "_call_llm", return_value=(parsed_data, "{}")),
+            patch.object(service, "_get_parsed", return_value=(parsed_data, "{}")),
             patch("app.services.pattern.pattern_repository") as mock_repo,
         ):
             mock_repo.create.return_value = mock_pattern
@@ -217,7 +217,7 @@ class TestImportFromText:
                     f"storage/parsed/{fixed_uuid}.json",
                 ],
             ),
-            patch.object(service, "_call_llm", return_value=(parsed_data, "{}")),
+            patch.object(service, "_get_parsed", return_value=(parsed_data, "{}")),
             patch("app.services.pattern.pattern_repository") as mock_repo,
         ):
             mock_repo.create.return_value = mock_pattern

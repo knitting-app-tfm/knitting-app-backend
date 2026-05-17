@@ -13,7 +13,16 @@ from app.services.pattern import (
 router = APIRouter(prefix="/patterns", tags=["patterns"])
 
 
-@router.post("/import/pdf", response_model=PatternResponse, status_code=201)
+@router.post(
+    "/import/pdf",
+    response_model=PatternResponse,
+    status_code=201,
+    summary="Import pattern from PDF",
+    description=(
+        "Uploads a PDF file containing a knitting pattern. "
+        "The text is extracted from the PDF and processed by the LLM to produce a structured pattern."
+    ),
+)
 async def import_pattern_from_pdf(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -28,7 +37,16 @@ async def import_pattern_from_pdf(
     return PatternResponse.model_validate(pattern)
 
 
-@router.post("/import/text", response_model=PatternResponse, status_code=201)
+@router.post(
+    "/import/text",
+    response_model=PatternResponse,
+    status_code=201,
+    summary="Import pattern from plain text",
+    description=(
+        "Receives a knitting pattern as plain text and processes it with the LLM "
+        "to produce a structured pattern."
+    ),
+)
 def import_pattern_from_text(
     text: str = Body(media_type="text/plain"),
     db: Session = Depends(get_db),

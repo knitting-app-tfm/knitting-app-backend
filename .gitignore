@@ -222,3 +222,5 @@ storage/
 
 # VS Code
 pyrightconfig.json
+
+firebase-service-account.json
