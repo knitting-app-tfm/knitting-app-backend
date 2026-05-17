@@ -1,4 +1,6 @@
-from firebase_admin.auth import EmailAlreadyExistsError as FirebaseEmailAlreadyExistsError
+from firebase_admin.auth import (
+    EmailAlreadyExistsError as FirebaseEmailAlreadyExistsError,
+)
 from sqlalchemy.orm import Session
 
 from app.core.firebase import verify_firebase_token
