@@ -2,7 +2,7 @@ import enum
 import uuid
 
 from sqlalchemy import Column, DateTime, Enum, Float, ForeignKey, Integer, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -44,7 +44,7 @@ class Pattern(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     # nullable=True until Firebase auth is implemented
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    title = Column(String, nullable=False)
+    title = Column(String, nullable=True)
     craft = Column(Enum(CraftType, name="crafttype"), nullable=True)
     status = Column(
         Enum(PatternStatus, name="patternstatus"),
@@ -62,6 +62,7 @@ class Pattern(Base):
     gauge_size = Column(Float, nullable=True)
     gauge_unit = Column(Enum(GaugeUnit, name="gaugeunit"), nullable=True)
     needle_size = Column(String, nullable=True)
+    sizes = Column(ARRAY(String), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
