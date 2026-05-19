@@ -1,3 +1,4 @@
+import uuid
 from unittest.mock import MagicMock
 
 import pytest
@@ -69,3 +70,50 @@ class TestPatternRepositoryCreate:
         assert isinstance(pattern, Pattern)
         assert all(isinstance(y, PatternYarn) for y in yarns)
         assert all(y.pattern_id is pattern.id for y in yarns)
+
+
+class TestPatternRepositoryGetById:
+    def test_delegates_to_db_get(self, repo, db):
+        pattern_id = uuid.uuid4()
+        repo.get_by_id(db, pattern_id)
+        db.get.assert_called_once_with(Pattern, pattern_id)
+
+
+class TestPatternRepositoryUpdate:
+    def test_calls_db_operations_in_correct_order(self, repo, db):
+        old_yarn = MagicMock()
+        pattern = MagicMock()
+        pattern.id = uuid.uuid4()
+        pattern.yarns = [old_yarn]
+
+        repo.update(db, pattern, yarns_data=[{"strands": 1}], title="Test")
+
+        method_names = [c[0] for c in db.method_calls]
+        assert method_names.index("delete") < method_names.index("flush")
+        assert method_names.index("flush") < method_names.index("add")
+        assert method_names.index("add") < method_names.index("commit")
+        assert method_names.index("commit") < method_names.index("refresh")
+
+    def test_updates_pattern_fields(self, repo, db):
+        pattern = MagicMock()
+        pattern.yarns = []
+
+        repo.update(db, pattern, yarns_data=[], title="Updated Title", sizes=["M", "L"])
+
+        assert pattern.title == "Updated Title"
+        assert pattern.sizes == ["M", "L"]
+
+    def test_deletes_old_yarns_and_creates_new_ones(self, repo, db):
+        old_yarn = MagicMock()
+        pattern = MagicMock()
+        pattern.id = uuid.uuid4()
+        pattern.yarns = [old_yarn]
+
+        repo.update(db, pattern, yarns_data=[{"label": "New Yarn", "strands": 2}])
+
+        db.delete.assert_called_once_with(old_yarn)
+        assert db.add.call_count == 1
+        new_yarn = db.add.call_args[0][0]
+        assert isinstance(new_yarn, PatternYarn)
+        assert new_yarn.label == "New Yarn"
+        assert new_yarn.strands == 2
