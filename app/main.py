@@ -1,6 +1,10 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
+from app.core.config import settings
 from app.routers import router as pattern_router
 from app.routers.abbreviation import router as abbreviation_router
 from app.routers.auth import router as auth_router
@@ -21,6 +25,14 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(pattern_router)
 app.include_router(abbreviation_router)
+
+# Serve uploaded files (cover images, original PDFs, parsed JSON)
+# cover_image_path is stored as "storage/covers/<uuid>.jpg",
+# so mounting STORAGE_BASE_PATH at /storage makes the URL
+# http://localhost:8000/storage/covers/<uuid>.jpg resolve correctly.
+_storage_dir = Path(settings.STORAGE_BASE_PATH)
+_storage_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/storage", StaticFiles(directory=str(_storage_dir)), name="storage")
 
 
 @app.get("/")
