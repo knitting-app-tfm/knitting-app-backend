@@ -4,9 +4,18 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.models.pattern import PatternSource, PatternStatus
+from app.schemas.pattern import TextSegment
 from app.services.pattern import PatternNotConfirmedError, PatternService
 
 _PATTERN_ID = uuid.UUID("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+
+_NO_FMT = {"bold": False, "italic": False, "font_size": None}
+
+
+def _seg(
+    text: str, bold: bool = False, italic: bool = False, font_size: float | None = None
+) -> TextSegment:
+    return TextSegment(text=text, bold=bold, italic=italic, font_size=font_size)
 
 
 @pytest.fixture
@@ -56,14 +65,17 @@ class TestTranslate:
         mock_pattern.source = PatternSource.PDF
         db = MagicMock()
 
-        mock_lines = [{"line": 1, "tokens": [{"type": "text", "value": "Cast on"}]}]
+        mock_segments = [_seg("Cast on")]
+        mock_lines = [
+            {"line": 1, **_NO_FMT, "tokens": [{"type": "text", "value": "Cast on"}]}
+        ]
         expected_path = f"storage/tokens/{_PATTERN_ID}.json"
 
         with (
             patch("app.services.pattern.pattern_repository") as mock_repo,
             patch("app.services.pattern.abbreviation_repository") as mock_abbr_repo,
             patch.object(
-                service, "_read_source_text", return_value="Cast on"
+                service, "_read_source_text", return_value=mock_segments
             ) as mock_read,
             patch.object(service, "_tokenize", return_value=mock_lines) as mock_tok,
             patch.object(service, "_enrich_abbreviations", return_value=mock_lines),
@@ -75,7 +87,7 @@ class TestTranslate:
             result = service.translate(db, _PATTERN_ID)
 
         mock_read.assert_called_once_with(mock_pattern)
-        mock_tok.assert_called_once_with("Cast on", set())
+        mock_tok.assert_called_once_with(mock_segments, set())
         mock_repo.set_tokenized.assert_called_once_with(db, mock_pattern, expected_path)
         assert result == mock_lines
 
@@ -87,14 +99,17 @@ class TestTranslate:
         mock_pattern.source = PatternSource.TEXT
         db = MagicMock()
 
-        mock_lines = [{"line": 1, "tokens": [{"type": "text", "value": "Work k2"}]}]
+        mock_segments = [_seg("Work k2")]
+        mock_lines = [
+            {"line": 1, **_NO_FMT, "tokens": [{"type": "text", "value": "Work k2"}]}
+        ]
         expected_path = f"storage/tokens/{_PATTERN_ID}.json"
 
         with (
             patch("app.services.pattern.pattern_repository") as mock_repo,
             patch("app.services.pattern.abbreviation_repository") as mock_abbr_repo,
             patch.object(
-                service, "_read_source_text", return_value="Work k2"
+                service, "_read_source_text", return_value=mock_segments
             ) as mock_read,
             patch.object(service, "_tokenize", return_value=mock_lines),
             patch.object(service, "_enrich_abbreviations", return_value=mock_lines),
@@ -115,7 +130,10 @@ class TestTranslate:
         mock_pattern.tokens_file_path = f"storage/tokens/{_PATTERN_ID}.json"
         db = MagicMock()
 
-        stored_lines = [{"line": 1, "tokens": []}, {"line": 2, "tokens": []}]
+        stored_lines = [
+            {"line": 1, **_NO_FMT, "tokens": []},
+            {"line": 2, **_NO_FMT, "tokens": []},
+        ]
 
         with (
             patch("app.services.pattern.pattern_repository") as mock_repo,
@@ -137,61 +155,147 @@ class TestTranslate:
 
 
 class TestReadSourceText:
-    def test_pdf_delegates_to_extract_text(self, service):
+    def test_pdf_extracts_segments_with_formatting(self, service):
         pattern = MagicMock()
         pattern.source = PatternSource.PDF
         pattern.original_file_path = f"storage/original/{_PATTERN_ID}.pdf"
 
-        with (
-            patch("pathlib.Path.read_bytes", return_value=b"pdf bytes"),
-            patch.object(
-                service, "_extract_text", return_value="extracted"
-            ) as mock_ext,
-        ):
+        mock_segments = [_seg("Cast on\n", bold=True, font_size=12.0)]
+
+        with patch.object(
+            service, "_extract_segments_from_pdf", return_value=mock_segments
+        ) as mock_extract:
             result = service._read_source_text(pattern)
 
-        mock_ext.assert_called_once_with(b"pdf bytes")
-        assert result == "extracted"
+        assert result is mock_segments
+        assert mock_extract.call_count == 1
 
-    def test_text_reads_file_directly(self, service):
+    def test_text_produces_one_segment_per_line(self, service):
         pattern = MagicMock()
         pattern.source = PatternSource.TEXT
         pattern.original_file_path = f"storage/original/{_PATTERN_ID}.txt"
 
-        with patch("pathlib.Path.read_text", return_value="plain text"):
+        with patch("pathlib.Path.read_text", return_value="line one\nline two"):
             result = service._read_source_text(pattern)
 
-        assert result == "plain text"
+        assert len(result) == 2
+        assert result[0] == TextSegment(
+            text="line one", bold=False, italic=False, font_size=None
+        )
+        assert result[1] == TextSegment(
+            text="line two", bold=False, italic=False, font_size=None
+        )
+
+    def test_text_trailing_newline_produces_empty_last_segment(self, service):
+        pattern = MagicMock()
+        pattern.source = PatternSource.TEXT
+        pattern.original_file_path = f"storage/original/{_PATTERN_ID}.txt"
+
+        with patch("pathlib.Path.read_text", return_value="only line\n"):
+            result = service._read_source_text(pattern)
+
+        assert len(result) == 2
+        assert result[1] == TextSegment(
+            text="", bold=False, italic=False, font_size=None
+        )
+
+    def test_text_segments_have_no_formatting(self, service):
+        pattern = MagicMock()
+        pattern.source = PatternSource.TEXT
+        pattern.original_file_path = f"storage/original/{_PATTERN_ID}.txt"
+
+        with patch("pathlib.Path.read_text", return_value="CO 20 sts"):
+            result = service._read_source_text(pattern)
+
+        seg = result[0]
+        assert seg.bold is False
+        assert seg.italic is False
+        assert seg.font_size is None
 
 
 # ---------------------------------------------------------------------------
-# _tokenize (line-by-line structure)
+# _tokenize (line-by-line structure + formatting propagation)
 # ---------------------------------------------------------------------------
 
 
 class TestTokenize:
-    def test_empty_lines_produce_empty_token_lists(self, service):
-        result = service._tokenize("Line one\n\nLine three", known_codes=set())
+    def test_empty_segments_produce_empty_token_lists(self, service):
+        segments = [_seg("Line one"), _seg(""), _seg("Line three")]
+        result = service._tokenize(segments, known_codes=set())
 
         assert len(result) == 3
         assert result[0] == {
             "line": 1,
+            **_NO_FMT,
             "tokens": [{"type": "text", "value": "Line one"}],
         }
-        assert result[1] == {"line": 2, "tokens": []}
+        assert result[1] == {"line": 2, **_NO_FMT, "tokens": []}
         assert result[2]["line"] == 3
         assert result[2]["tokens"] != []
 
     def test_line_numbers_are_one_indexed_and_sequential(self, service):
-        result = service._tokenize("a\n\nb", known_codes=set())
+        segments = [_seg("a"), _seg(""), _seg("b")]
+        result = service._tokenize(segments, known_codes=set())
 
         assert [r["line"] for r in result] == [1, 2, 3]
 
-    def test_trailing_newline_produces_empty_last_line(self, service):
-        result = service._tokenize("only line\n", known_codes=set())
+    def test_empty_last_segment_maps_to_empty_line(self, service):
+        segments = [_seg("only line"), _seg("")]
+        result = service._tokenize(segments, known_codes=set())
 
         assert len(result) == 2
-        assert result[1] == {"line": 2, "tokens": []}
+        assert result[1]["line"] == 2
+        assert result[1]["tokens"] == []
+
+    def test_formatting_is_set_on_line_dict(self, service):
+        segments = [_seg("Cast on", bold=True, italic=False, font_size=14.0)]
+        result = service._tokenize(segments, known_codes=set())
+
+        line = result[0]
+        assert line["bold"] is True
+        assert line["italic"] is False
+        assert line["font_size"] == 14.0
+
+    def test_formatting_is_not_duplicated_on_tokens(self, service):
+        segments = [_seg("20 sts", bold=False, italic=True, font_size=10.0)]
+        result = service._tokenize(segments, known_codes={"sts"})
+
+        for token in result[0]["tokens"]:
+            assert "bold" not in token
+            assert "italic" not in token
+            assert "font_size" not in token
+
+    def test_line_dict_includes_formatting_fields(self, service):
+        segments = [_seg("work in rounds", bold=False, italic=False, font_size=12.5)]
+        result = service._tokenize(segments, known_codes=set())
+
+        line = result[0]
+        assert "bold" in line
+        assert "italic" in line
+        assert "font_size" in line
+        assert line["font_size"] == 12.5
+
+    def test_empty_line_formatting_is_preserved(self, service):
+        segments = [_seg(""), _seg("")]
+        result = service._tokenize(segments, known_codes=set())
+
+        for line in result:
+            assert "bold" in line
+            assert "italic" in line
+            assert "font_size" in line
+
+    def test_different_lines_have_independent_formatting(self, service):
+        segments = [
+            _seg("Bold line", bold=True, font_size=16.0),
+            _seg("Normal line", bold=False, font_size=10.0),
+        ]
+        result = service._tokenize(segments, known_codes=set())
+
+        assert result[0]["bold"] is True
+        assert result[0]["font_size"] == 16.0
+
+        assert result[1]["bold"] is False
+        assert result[1]["font_size"] == 10.0
 
 
 # ---------------------------------------------------------------------------
@@ -433,6 +537,7 @@ class TestEnrichAbbreviations:
         lines = [
             {
                 "line": 1,
+                **_NO_FMT,
                 "tokens": [
                     {
                         "type": "abbreviation",
@@ -456,6 +561,7 @@ class TestEnrichAbbreviations:
         lines = [
             {
                 "line": 1,
+                **_NO_FMT,
                 "tokens": [
                     {
                         "type": "abbreviation",
@@ -476,17 +582,19 @@ class TestEnrichAbbreviations:
 
     def test_non_abbreviation_tokens_are_not_touched(self, service):
         db = MagicMock()
-        lines = [{"line": 1, "tokens": [{"type": "text", "value": "Cast on"}]}]
+        token = {"type": "text", "value": "Cast on"}
+        lines = [{"line": 1, **_NO_FMT, "tokens": [token]}]
 
         with patch("app.services.pattern.abbreviation_repository") as mock_repo:
             service._enrich_abbreviations(lines, db)
             mock_repo.get_by_code.assert_not_called()
 
-        assert lines[0]["tokens"][0] == {"type": "text", "value": "Cast on"}
+        assert lines[0]["tokens"][0]["type"] == "text"
+        assert lines[0]["tokens"][0]["value"] == "Cast on"
 
     def test_empty_lines_are_skipped(self, service):
         db = MagicMock()
-        lines = [{"line": 2, "tokens": []}]
+        lines = [{"line": 2, **_NO_FMT, "tokens": []}]
 
         with patch("app.services.pattern.abbreviation_repository") as mock_repo:
             service._enrich_abbreviations(lines, db)

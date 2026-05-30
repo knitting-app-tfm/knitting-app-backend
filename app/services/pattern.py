@@ -5,7 +5,8 @@ from io import BytesIO
 from pathlib import Path
 
 from groq import Groq
-from pdfminer.high_level import extract_text
+from pdfminer.high_level import extract_pages, extract_text
+from pdfminer.layout import LTChar, LTTextBox, LTTextLine
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -19,6 +20,7 @@ from app.models.pattern import (
 )
 from app.repositories.abbreviation import abbreviation_repository
 from app.repositories.pattern import pattern_repository
+from app.schemas.pattern import TextSegment
 
 # ---------------------------------------------------------------------------
 # Tokenizer constants
@@ -268,8 +270,8 @@ class PatternService:
         if pattern.status == PatternStatus.CONFIRMED:
             all_abbreviations = abbreviation_repository.get_all(db)
             known_codes = {abbr.abbreviation.lower() for abbr in all_abbreviations}
-            text = self._read_source_text(pattern)
-            lines = self._tokenize(text, known_codes)
+            segments = self._read_source_text(pattern)
+            lines = self._tokenize(segments, known_codes)
             self._enrich_abbreviations(lines, db)
             tokens_path = self._save_file(
                 json.dumps(lines, ensure_ascii=False),
@@ -297,29 +299,71 @@ class PatternService:
     # Private helpers — translate
     # ------------------------------------------------------------------
 
-    def _read_source_text(self, pattern: Pattern) -> str:
-        """Read the original pattern text from storage (PDF or plain text)."""
+    def _read_source_text(self, pattern: Pattern) -> list[TextSegment]:
+        """Read the original pattern file and return one TextSegment per line with formatting."""
         path = Path(
             settings.STORAGE_BASE_PATH
         ) / pattern.original_file_path.removeprefix("storage/")
         if pattern.source == PatternSource.PDF:
-            return self._extract_text(path.read_bytes())
-        return path.read_text(encoding="utf-8")
+            return self._extract_segments_from_pdf(path)
+        return [
+            TextSegment(text=line, bold=False, italic=False, font_size=None)
+            for line in path.read_text(encoding="utf-8").split("\n")
+        ]
 
-    def _tokenize(self, text: str, known_codes: set[str]) -> list[dict]:
-        """Split text into lines and tokenize each line independently.
+    def _extract_segments_from_pdf(self, path: Path) -> list[TextSegment]:
+        """Extract text and per-line formatting from a PDF using pdfminer layout analysis."""
+        segments: list[TextSegment] = []
+        for page_layout in extract_pages(path):
+            for element in page_layout:
+                if isinstance(element, LTTextBox):
+                    for line in element:
+                        if isinstance(line, LTTextLine):
+                            first_char = next(
+                                (c for c in line if isinstance(c, LTChar)), None
+                            )
+                            if first_char:
+                                fontname = first_char.fontname
+                                font_size = first_char.size
+                                bold = "Bold" in fontname or "bold" in fontname
+                                italic = (
+                                    "Italic" in fontname
+                                    or "italic" in fontname
+                                    or "Oblique" in fontname
+                                )
+                            else:
+                                bold, italic, font_size = False, False, None
+                            text = line.get_text()
+                            segments.append(
+                                TextSegment(
+                                    text=text,
+                                    bold=bold,
+                                    italic=italic,
+                                    font_size=font_size,
+                                )
+                            )
+        return segments
 
-        Empty lines are preserved as LineTokens with an empty token list to
+    def _tokenize(
+        self, segments: list[TextSegment], known_codes: set[str]
+    ) -> list[dict]:
+        """Tokenize each TextSegment independently and propagate formatting to all tokens.
+
+        Empty segments (whitespace-only text) are preserved with an empty token list to
         maintain the visual structure of the pattern.
         """
         result = []
-        for i, line in enumerate(text.split("\n"), start=1):
-            if not line.strip():
-                result.append({"line": i, "tokens": []})
+        for i, segment in enumerate(segments, start=1):
+            fmt = {
+                "bold": segment.bold,
+                "italic": segment.italic,
+                "font_size": segment.font_size,
+            }
+            if not segment.text.strip():
+                result.append({"line": i, **fmt, "tokens": []})
             else:
-                result.append(
-                    {"line": i, "tokens": self._tokenize_line(line, known_codes)}
-                )
+                tokens = self._tokenize_line(segment.text, known_codes)
+                result.append({"line": i, **fmt, "tokens": tokens})
         return result
 
     def _tokenize_line(self, line: str, known_codes: set[str]) -> list[dict]:

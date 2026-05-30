@@ -114,6 +114,15 @@ class PatternDetailResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+class TextSegment(BaseModel):
+    """One line of source text with its formatting metadata, as extracted from the file."""
+
+    text: str
+    bold: bool
+    italic: bool
+    font_size: float | None
+
+
 class TextToken(BaseModel):
     type: Literal["text"]
     value: str
@@ -150,4 +159,7 @@ class LineTokens(BaseModel):
     """One line from the pattern, with its tokens. Empty lines have tokens=[]."""
 
     line: int
+    bold: bool
+    italic: bool
+    font_size: float | None
     tokens: list[Token]

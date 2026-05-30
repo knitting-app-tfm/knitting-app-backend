@@ -22,5 +22,12 @@ class AbbreviationService:
             raise HTTPException(status_code=404, detail="Abbreviation not found")
         return abbreviation
 
+    def get_by_code(self, db: Session, code: str) -> Abbreviation:
+        """Return the abbreviation matching *code* (case-insensitive). Raises 404 if not found."""
+        abbreviation = abbreviation_repository.get_by_code(db, code)
+        if abbreviation is None:
+            raise HTTPException(status_code=404, detail="Abbreviation not found")
+        return abbreviation
+
 
 abbreviation_service = AbbreviationService()
