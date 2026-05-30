@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.abbreviation import Abbreviation, AbbreviationCraft, AbbreviationType
@@ -21,6 +22,14 @@ class AbbreviationRepository:
 
     def get_by_id(self, db: Session, abbreviation_id: UUID) -> Abbreviation | None:
         return db.get(Abbreviation, abbreviation_id)
+
+    def get_by_code(self, db: Session, code: str) -> Abbreviation | None:
+        """Look up an abbreviation by its code (case-insensitive)."""
+        return (
+            db.query(Abbreviation)
+            .filter(func.lower(Abbreviation.abbreviation) == code.lower())
+            .first()
+        )
 
 
 abbreviation_repository = AbbreviationRepository()

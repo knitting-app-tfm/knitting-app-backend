@@ -2,7 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.models.pattern import Pattern, PatternYarn
+from app.models.pattern import Pattern, PatternStatus, PatternYarn
 
 
 class PatternRepository:
@@ -36,6 +36,16 @@ class PatternRepository:
             yarn = PatternYarn(pattern_id=pattern.id, **yarn_data)
             db.add(yarn)
 
+        db.commit()
+        db.refresh(pattern)
+        return pattern
+
+    def set_tokenized(
+        self, db: Session, pattern: Pattern, tokens_file_path: str
+    ) -> Pattern:
+        """Update only the tokens path and status to TOKENIZED."""
+        pattern.tokens_file_path = tokens_file_path
+        pattern.status = PatternStatus.TOKENIZED
         db.commit()
         db.refresh(pattern)
         return pattern

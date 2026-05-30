@@ -7,12 +7,18 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.pattern import CraftType, GaugeUnit
-from app.schemas.pattern import ErrorResponse, PatternDetailResponse, PatternResponse
+from app.schemas.pattern import (
+    ErrorResponse,
+    LineTokens,
+    PatternDetailResponse,
+    PatternResponse,
+)
 from app.services.pattern import (
     EmptyTextError,
     EmptyTitleError,
     FileTooLargeError,
     InvalidFileTypeError,
+    PatternNotConfirmedError,
     pattern_service,
 )
 
@@ -27,6 +33,34 @@ _422 = {
 }
 _413 = {413: {"model": ErrorResponse, "description": "File exceeds the 10 MB limit"}}
 _415 = {415: {"model": ErrorResponse, "description": "File is not a PDF"}}
+
+
+@router.post(
+    "/{pattern_id}/translate",
+    response_model=list[LineTokens],
+    responses={
+        **_404,
+        400: {"model": ErrorResponse, "description": "Pattern not yet confirmed"},
+    },
+    summary="Translate pattern into tokens",
+    description=(
+        "Tokenizes the pattern text and translates abbreviations. "
+        "On first call (CONFIRMED), tokenizes and caches the result on disk, then advances "
+        "status to TOKENIZED. Subsequent calls reuse the cached file. "
+        "Abbreviation tokens are always resolved against the DB at call time."
+    ),
+)
+def translate_pattern(
+    pattern_id: UUID,
+    db: Session = Depends(get_db),
+) -> list[LineTokens]:
+    try:
+        result = pattern_service.translate(db, pattern_id)
+    except PatternNotConfirmedError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if result is None:
+        raise HTTPException(status_code=404, detail="Pattern not found")
+    return [LineTokens.model_validate(lt) for lt in result]
 
 
 @router.get(
