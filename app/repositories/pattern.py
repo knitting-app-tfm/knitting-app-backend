@@ -1,0 +1,44 @@
+from uuid import UUID
+
+from sqlalchemy.orm import Session
+
+from app.models.pattern import Pattern, PatternYarn
+
+
+class PatternRepository:
+    def create(self, db: Session, yarns_data: list[dict], **pattern_kwargs) -> Pattern:
+        pattern = Pattern(**pattern_kwargs)
+        db.add(pattern)
+        db.flush()
+
+        for yarn_data in yarns_data:
+            yarn = PatternYarn(pattern_id=pattern.id, **yarn_data)
+            db.add(yarn)
+
+        db.commit()
+        db.refresh(pattern)
+        return pattern
+
+    def get_by_id(self, db: Session, pattern_id: UUID) -> Pattern | None:
+        return db.get(Pattern, pattern_id)
+
+    def update(
+        self, db: Session, pattern: Pattern, yarns_data: list[dict], **pattern_kwargs
+    ) -> Pattern:
+        for key, value in pattern_kwargs.items():
+            setattr(pattern, key, value)
+
+        for yarn in list(pattern.yarns):
+            db.delete(yarn)
+        db.flush()
+
+        for yarn_data in yarns_data:
+            yarn = PatternYarn(pattern_id=pattern.id, **yarn_data)
+            db.add(yarn)
+
+        db.commit()
+        db.refresh(pattern)
+        return pattern
+
+
+pattern_repository = PatternRepository()
