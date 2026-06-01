@@ -19,6 +19,8 @@ from app.services.pattern import (
     PatternService,
     _MAX_FILE_SIZE,
 )
+from app.core.config import settings
+from app.services.pattern import pattern_llm, pattern_parser
 
 _PDF_BYTES = b"%PDF-1.4 test"
 _PDF_CONTENT_TYPE = "application/pdf"
@@ -32,7 +34,7 @@ def _groq_response(content: str) -> MagicMock:
 
 @pytest.fixture
 def service():
-    with patch("app.services.pattern.Groq"):
+    with patch("app.services.pattern.pattern_service.Groq"):
         yield PatternService()
 
 
@@ -71,11 +73,12 @@ class TestValidate:
 
 
 class TestExtractText:
-    def test_delegates_to_pdfminer(self, service):
+    def test_delegates_to_pdfminer(self):
         with patch(
-            "app.services.pattern.extract_text", return_value="pattern text"
+            "app.services.pattern.pattern_parser.extract_text",
+            return_value="pattern text",
         ) as mock_fn:
-            result = service._extract_text(b"pdf bytes")
+            result = pattern_parser.extract_text_from_pdf(b"pdf bytes")
 
         mock_fn.assert_called_once()
         assert result == "pattern text"
@@ -106,7 +109,7 @@ class TestCallLlm:
             json.dumps(payload)
         )
 
-        parsed, _ = service._call_llm("pattern text")
+        parsed, _ = pattern_llm.call_llm(service._client, "pattern text")
 
         assert parsed["title"] == "Cozy Sweater"
         assert parsed["craft"] == CraftType.KNITTING
@@ -124,7 +127,7 @@ class TestCallLlm:
             json.dumps(payload)
         )
 
-        parsed, _ = service._call_llm("text")
+        parsed, _ = pattern_llm.call_llm(service._client, "text")
 
         assert parsed["craft"] is None
         assert parsed["gauge_unit"] is None
@@ -135,7 +138,7 @@ class TestCallLlm:
             "connection error"
         )
 
-        parsed, _ = service._call_llm("text")
+        parsed, _ = pattern_llm.call_llm(service._client, "text")
 
         assert parsed == {"title": "Unknown", "craft": None, "yarns": []}
 
@@ -144,7 +147,7 @@ class TestCallLlm:
             "not json {{"
         )
 
-        parsed, _ = service._call_llm("text")
+        parsed, _ = pattern_llm.call_llm(service._client, "text")
 
         assert parsed == {"title": "Unknown", "craft": None, "yarns": []}
 
@@ -156,18 +159,27 @@ class TestImportFromPdf:
         mock_pattern = MagicMock()
 
         with (
-            patch("app.services.pattern.uuid.uuid4", return_value=fixed_uuid),
-            patch.object(
-                service,
-                "_save_file",
+            patch(
+                "app.services.pattern.pattern_service.uuid.uuid4",
+                return_value=fixed_uuid,
+            ),
+            patch(
+                "app.services.pattern.pattern_storage.save_file",
                 side_effect=[
                     f"storage/original/{fixed_uuid}.pdf",
                     f"storage/parsed/{fixed_uuid}.json",
                 ],
             ),
-            patch("app.services.pattern.extract_text", return_value="text"),
-            patch.object(service, "_get_parsed", return_value=({}, "{}")),
-            patch("app.services.pattern.pattern_repository") as mock_repo,
+            patch(
+                "app.services.pattern.pattern_parser.extract_text_from_pdf",
+                return_value="text",
+            ),
+            patch(
+                "app.services.pattern.pattern_llm.get_parsed", return_value=({}, "{}")
+            ),
+            patch(
+                "app.services.pattern.pattern_service.pattern_repository"
+            ) as mock_repo,
         ):
             mock_repo.create.return_value = mock_pattern
             result = service.import_from_pdf(db, _PDF_BYTES, _PDF_CONTENT_TYPE)
@@ -199,17 +211,23 @@ class TestImportFromText:
         mock_pattern = MagicMock()
 
         with (
-            patch("app.services.pattern.uuid.uuid4", return_value=fixed_uuid),
-            patch.object(
-                service,
-                "_save_file",
+            patch(
+                "app.services.pattern.pattern_service.uuid.uuid4",
+                return_value=fixed_uuid,
+            ),
+            patch(
+                "app.services.pattern.pattern_storage.save_file",
                 side_effect=[
                     f"storage/original/{fixed_uuid}.txt",
                     f"storage/parsed/{fixed_uuid}.json",
                 ],
             ),
-            patch.object(service, "_get_parsed", return_value=({}, "{}")),
-            patch("app.services.pattern.pattern_repository") as mock_repo,
+            patch(
+                "app.services.pattern.pattern_llm.get_parsed", return_value=({}, "{}")
+            ),
+            patch(
+                "app.services.pattern.pattern_service.pattern_repository"
+            ) as mock_repo,
         ):
             mock_repo.create.return_value = mock_pattern
             result = service.import_from_text(db, "cast on 20 stitches...")
@@ -239,7 +257,9 @@ class TestGetById:
         pattern = MagicMock()
         pattern_id = uuid.uuid4()
 
-        with patch("app.services.pattern.pattern_repository") as mock_repo:
+        with patch(
+            "app.services.pattern.pattern_service.pattern_repository"
+        ) as mock_repo:
             mock_repo.get_by_id.return_value = pattern
             result = service.get_by_id(db, pattern_id)
 
@@ -249,7 +269,9 @@ class TestGetById:
     def test_returns_none_when_not_found(self, service):
         db = MagicMock()
 
-        with patch("app.services.pattern.pattern_repository") as mock_repo:
+        with patch(
+            "app.services.pattern.pattern_service.pattern_repository"
+        ) as mock_repo:
             mock_repo.get_by_id.return_value = None
             result = service.get_by_id(db, uuid.uuid4())
 
@@ -284,7 +306,10 @@ class TestGetPrefill:
 
         with (
             patch.object(service, "get_by_id", return_value=pattern),
-            patch.object(service, "_read_parsed_json", return_value=parsed_data),
+            patch(
+                "app.services.pattern.pattern_storage.read_parsed_json",
+                return_value=parsed_data,
+            ),
         ):
             result = service.get_prefill(db, pattern.id)
 
@@ -314,7 +339,9 @@ class TestConfirm:
         pattern.cover_image_path = None
         mock_result = MagicMock()
 
-        with patch("app.services.pattern.pattern_repository") as mock_repo:
+        with patch(
+            "app.services.pattern.pattern_service.pattern_repository"
+        ) as mock_repo:
             mock_repo.update.return_value = mock_result
             result = service.confirm(db, pattern, **confirm_kwargs)
 
@@ -359,10 +386,13 @@ class TestConfirm:
         expected_path = f"storage/covers/{pattern.id}.png"
 
         with (
-            patch.object(
-                service, "_save_file", return_value=expected_path
+            patch(
+                "app.services.pattern.pattern_storage.save_file",
+                return_value=expected_path,
             ) as mock_save,
-            patch("app.services.pattern.pattern_repository") as mock_repo,
+            patch(
+                "app.services.pattern.pattern_service.pattern_repository"
+            ) as mock_repo,
         ):
             mock_repo.update.return_value = MagicMock()
             service.confirm(db, pattern, **confirm_kwargs)
@@ -381,9 +411,105 @@ class TestConfirm:
         pattern.cover_image_path = "storage/covers/existing.jpg"
         confirm_kwargs["cover_bytes"] = None
 
-        with patch("app.services.pattern.pattern_repository") as mock_repo:
+        with patch(
+            "app.services.pattern.pattern_service.pattern_repository"
+        ) as mock_repo:
             mock_repo.update.return_value = MagicMock()
             service.confirm(db, pattern, **confirm_kwargs)
 
         update_kwargs = mock_repo.update.call_args.kwargs
         assert update_kwargs["cover_image_path"] == "storage/covers/existing.jpg"
+
+
+# ---------------------------------------------------------------------------
+# pattern_llm — get_parsed / mock_response
+# ---------------------------------------------------------------------------
+
+
+class TestGetParsed:
+    def test_calls_mock_response_when_flag_enabled(self):
+        client = MagicMock()
+        with patch.object(settings, "USE_MOCK_LLM", True):
+            with patch(
+                "app.services.pattern.pattern_llm.mock_response",
+                return_value=({}, "{}"),
+            ) as mock_fn:
+                result = pattern_llm.get_parsed(client, "text")
+        mock_fn.assert_called_once()
+        assert result == ({}, "{}")
+
+    def test_calls_call_llm_when_flag_disabled(self):
+        client = MagicMock()
+        with patch.object(settings, "USE_MOCK_LLM", False):
+            with patch(
+                "app.services.pattern.pattern_llm.call_llm",
+                return_value=({"title": "T"}, "{}"),
+            ) as mock_fn:
+                pattern_llm.get_parsed(client, "text")
+        mock_fn.assert_called_once_with(client, "text")
+
+
+class TestMockResponse:
+    def test_returns_parsed_dict_and_json_string(self):
+        parsed, json_str = pattern_llm.mock_response()
+
+        assert parsed["title"] == "Mock Knitting Pattern"
+        assert parsed["craft"] == CraftType.KNITTING
+        assert parsed["gauge_unit"] == GaugeUnit.CM
+        assert parsed["yarns"][0]["yarn_weight"] == YarnWeight.DK
+        assert json.loads(json_str)["title"] == "Mock Knitting Pattern"
+
+    def test_json_string_is_valid_json(self):
+        _, json_str = pattern_llm.mock_response()
+        assert json.loads(json_str) is not None
+
+
+class TestCallLlmNoneContent:
+    def test_fallback_when_response_content_is_none(self, service):
+        service._client.chat.completions.create.return_value = _groq_response(None)
+
+        parsed, _ = pattern_llm.call_llm(service._client, "text")
+
+        assert parsed == {"title": "Unknown", "craft": None, "yarns": []}
+
+
+# ---------------------------------------------------------------------------
+# pattern_service — _normalize_yarns
+# ---------------------------------------------------------------------------
+
+
+class TestNormalizeYarns:
+    def test_valid_yarn_weight_is_coerced_to_enum(self, service):
+        result = service._normalize_yarns([{"yarn_weight": "DK", "label": "Main"}])
+
+        assert result[0]["yarn_weight"] == YarnWeight.DK
+        assert result[0]["label"] == "Main"
+
+    def test_invalid_yarn_weight_becomes_none(self, service):
+        result = service._normalize_yarns([{"yarn_weight": "INVALID"}])
+
+        assert result[0]["yarn_weight"] is None
+
+    def test_none_yarn_weight_becomes_none(self, service):
+        result = service._normalize_yarns([{"yarn_weight": None}])
+
+        assert result[0]["yarn_weight"] is None
+
+    def test_strands_defaults_to_one_when_absent(self, service):
+        result = service._normalize_yarns([{"yarn_weight": "DK"}])
+
+        assert result[0]["strands"] == 1
+
+    def test_existing_strands_value_is_preserved(self, service):
+        result = service._normalize_yarns([{"yarn_weight": "DK", "strands": 2}])
+
+        assert result[0]["strands"] == 2
+
+    def test_empty_list_returns_empty_list(self, service):
+        assert service._normalize_yarns([]) == []
+
+    def test_original_dict_is_not_mutated(self, service):
+        original = {"yarn_weight": "DK", "label": "Main"}
+        service._normalize_yarns([original])
+
+        assert original["yarn_weight"] == "DK"

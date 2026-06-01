@@ -130,7 +130,7 @@ class TextToken(BaseModel):
 
 class SizeGroupToken(BaseModel):
     type: Literal["size_group"]
-    values: list[int]
+    values: list[int | float]
     unit: str | None
     scalable: bool
 
@@ -140,6 +140,7 @@ class AbbreviationToken(BaseModel):
     code: str
     translated: bool
     full_name: str | None
+    quantity: int | None = None
 
 
 class NumberToken(BaseModel):
