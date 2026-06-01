@@ -1,7 +1,8 @@
 from datetime import datetime
+from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.pattern import (
     CraftType,
@@ -63,10 +64,8 @@ class PatternResponse(BaseModel):
     status: PatternStatus
     source: PatternSource
     cover_image_path: str | None
-    ravelry_pattern_id: str | None
     original_file_path: str
     parsed_json_path: str | None
-    tokens_file_path: str | None
     gauge_stitches: float | None
     gauge_rows: float | None
     gauge_size: float | None
@@ -96,9 +95,7 @@ class PatternDetailResponse(BaseModel):
     source: PatternSource
     original_file_path: str
     parsed_json_path: str | None
-    tokens_file_path: str | None
     cover_image_path: str | None
-    ravelry_pattern_id: str | None
     created_at: datetime
     updated_at: datetime | None
     title: str | None = None
@@ -110,3 +107,60 @@ class PatternDetailResponse(BaseModel):
     needle_size: str | None = None
     sizes: list[str] = []
     yarns: list[PatternYarnPrefillItem] = []
+
+
+# ---------------------------------------------------------------------------
+# Token schemas — used by POST /patterns/{id}/translate
+# ---------------------------------------------------------------------------
+
+
+class TextSegment(BaseModel):
+    """One line of source text with its formatting metadata, as extracted from the file."""
+
+    text: str
+    bold: bool
+    italic: bool
+    font_size: float | None
+
+
+class TextToken(BaseModel):
+    type: Literal["text"]
+    value: str
+
+
+class SizeGroupToken(BaseModel):
+    type: Literal["size_group"]
+    values: list[int | float]
+    unit: str | None
+    scalable: bool
+
+
+class AbbreviationToken(BaseModel):
+    type: Literal["abbreviation"]
+    code: str
+    translated: bool
+    full_name: str | None
+    quantity: int | None = None
+
+
+class NumberToken(BaseModel):
+    type: Literal["number"]
+    value: float
+    unit: str | None
+    scalable: bool
+
+
+Token = Annotated[
+    TextToken | SizeGroupToken | AbbreviationToken | NumberToken,
+    Field(discriminator="type"),
+]
+
+
+class LineTokens(BaseModel):
+    """One line from the pattern, with its tokens. Empty lines have tokens=[]."""
+
+    line: int
+    bold: bool
+    italic: bool
+    font_size: float | None
+    tokens: list[Token]

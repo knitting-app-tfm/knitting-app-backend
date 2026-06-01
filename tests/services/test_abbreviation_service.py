@@ -65,6 +65,32 @@ class TestGetAll:
         )
 
 
+class TestGetByCode:
+    def test_returns_abbreviation_when_found(self, service):
+        db = MagicMock()
+        mock_abbreviation = MagicMock(spec=Abbreviation)
+
+        with patch("app.services.abbreviation.abbreviation_repository") as mock_repo:
+            mock_repo.get_by_code.return_value = mock_abbreviation
+
+            result = service.get_by_code(db, "sts")
+
+        assert result is mock_abbreviation
+        mock_repo.get_by_code.assert_called_once_with(db, "sts")
+
+    def test_raises_404_when_not_found(self, service):
+        db = MagicMock()
+
+        with patch("app.services.abbreviation.abbreviation_repository") as mock_repo:
+            mock_repo.get_by_code.return_value = None
+
+            with pytest.raises(HTTPException) as exc_info:
+                service.get_by_code(db, "unknown")
+
+        assert exc_info.value.status_code == 404
+        assert exc_info.value.detail == "Abbreviation not found"
+
+
 class TestGetById:
     def test_returns_abbreviation_when_found(self, service):
         db = MagicMock()

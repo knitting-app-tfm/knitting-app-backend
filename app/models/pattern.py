@@ -17,6 +17,7 @@ class CraftType(str, enum.Enum):
 class PatternStatus(str, enum.Enum):
     IMPORTED = "IMPORTED"
     CONFIRMED = "CONFIRMED"
+    TOKENIZED = "TOKENIZED"
 
 
 class PatternSource(str, enum.Enum):
@@ -55,6 +56,7 @@ class Pattern(Base):
     cover_image_path = Column(String, nullable=True)
     original_file_path = Column(String, nullable=False)
     parsed_json_path = Column(String, nullable=True)
+    tokens_file_path = Column(String, nullable=True)
     gauge_stitches = Column(Float, nullable=True)
     gauge_rows = Column(Float, nullable=True)
     gauge_size = Column(Float, nullable=True)
