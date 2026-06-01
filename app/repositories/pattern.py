@@ -22,6 +22,9 @@ class PatternRepository:
     def get_by_id(self, db: Session, pattern_id: UUID) -> Pattern | None:
         return db.get(Pattern, pattern_id)
 
+    def get_by_user_id(self, db: Session, user_id: UUID) -> list[Pattern]:
+        return db.query(Pattern).filter(Pattern.user_id == user_id).all()
+
     def update(
         self, db: Session, pattern: Pattern, yarns_data: list[dict], **pattern_kwargs
     ) -> Pattern:
