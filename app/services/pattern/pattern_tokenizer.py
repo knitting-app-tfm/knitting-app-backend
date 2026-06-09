@@ -166,7 +166,12 @@ def tokenize_line(
         if m:
             raw_values = re.findall(r"\d+(?:\.\d+)?", m.group())
             value_count = len(raw_values)
-            if num_sizes == 0 or value_count == num_sizes:
+            starts_bare = m.group()[0].isdigit()
+            if (
+                num_sizes == 0
+                or value_count == num_sizes
+                or (starts_bare and value_count == num_sizes + 1)
+            ):
                 flush_text()
                 values = [float(v) if "." in v else int(v) for v in raw_values]
                 unit = _peek_unit(line[m.end() :])
@@ -262,13 +267,15 @@ def tokenize_line(
 
                 # Look ahead: does the digit suffix + following text form a valid size group?
                 sg_m = _SIZE_GROUP_RE.match(line, digits_pos)
-                if (
-                    sg_m
-                    and (
-                        num_sizes == 0 or _count_size_values(sg_m.group()) == num_sizes
+                if sg_m and num_sizes > 0:
+                    sg_count = _count_size_values(sg_m.group())
+                    sg_starts_bare = sg_m.group()[0].isdigit()
+                    split_ok = sg_count == num_sizes or (
+                        sg_starts_bare and sg_count == num_sizes + 1
                     )
-                    and num_sizes > 0
-                ):
+                else:
+                    split_ok = False
+                if sg_m and num_sizes > 0 and split_ok:
                     # Split: emit abbreviation for alpha prefix only;
                     # the digits+brackets will be matched as a size group next iteration.
                     flush_text()

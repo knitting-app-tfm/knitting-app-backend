@@ -213,8 +213,11 @@ class TestReadSourceText:
         ) as mock_extract:
             result = pattern_parser.read_source_text(pattern)
 
-        assert result is mock_segments
         assert mock_extract.call_count == 1
+        assert len(result) == 1
+        assert result[0] == TextSegment(
+            text="Cast on", bold=True, italic=False, font_size=12.0
+        )
 
     def test_text_produces_one_segment_per_line(self):
         pattern = MagicMock()
@@ -978,8 +981,8 @@ class TestTokenizeLineSuffixedAbbreviation:
         assert tokens[1]["type"] == "size_group"
         assert tokens[1]["values"] == [23, 24, 25]
 
-    def test_suffixed_no_split_when_size_group_count_mismatch(self):
-        """K23 (24, 25) with num_sizes=2 → count 3 ≠ 2 → no split, full code K23 with quantity."""
+    def test_suffixed_split_when_digits_plus_parens_form_default_first_size_group(self):
+        """K23 (24, 25) with num_sizes=2 → 3 values = 2+1 (bare default + 2 named) → split."""
         tokens = pattern_tokenizer.tokenize_line(
             "K23 (24, 25)",
             known_codes={"k"},
@@ -987,8 +990,10 @@ class TestTokenizeLineSuffixedAbbreviation:
             num_sizes=2,
         )
 
-        assert tokens[0]["code"] == "K23"
-        assert tokens[0].get("quantity") == 23
+        assert tokens[0]["type"] == "abbreviation"
+        assert tokens[0]["code"] == "K"
+        assert tokens[1]["type"] == "size_group"
+        assert tokens[1]["values"] == [23, 24, 25]
 
 
 # ---------------------------------------------------------------------------
