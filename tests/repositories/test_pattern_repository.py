@@ -79,6 +79,16 @@ class TestPatternRepositoryGetById:
         db.get.assert_called_once_with(Pattern, pattern_id)
 
 
+class TestPatternRepositoryGetByUserId:
+    def test_queries_by_user_id(self, repo, db):
+        user_id = uuid.uuid4()
+        result = repo.get_by_user_id(db, user_id)
+
+        db.query.assert_called_once_with(Pattern)
+        db.query.return_value.filter.return_value.all.assert_called_once()
+        assert result is db.query.return_value.filter.return_value.all.return_value
+
+
 class TestPatternRepositoryUpdate:
     def test_calls_db_operations_in_correct_order(self, repo, db):
         old_yarn = MagicMock()
@@ -117,3 +127,28 @@ class TestPatternRepositoryUpdate:
         assert isinstance(new_yarn, PatternYarn)
         assert new_yarn.label == "New Yarn"
         assert new_yarn.strands == 2
+
+
+class TestPatternRepositorySetTokenized:
+    def test_sets_tokens_path_and_status(self, repo, db):
+        pattern = MagicMock()
+
+        repo.set_tokenized(db, pattern, "storage/tokens/abc.json")
+
+        assert pattern.tokens_file_path == "storage/tokens/abc.json"
+        assert pattern.status == PatternStatus.TOKENIZED
+
+    def test_commits_and_refreshes(self, repo, db):
+        pattern = MagicMock()
+
+        repo.set_tokenized(db, pattern, "storage/tokens/abc.json")
+
+        db.commit.assert_called_once()
+        db.refresh.assert_called_once_with(pattern)
+
+    def test_returns_pattern(self, repo, db):
+        pattern = MagicMock()
+
+        result = repo.set_tokenized(db, pattern, "storage/tokens/abc.json")
+
+        assert result is pattern

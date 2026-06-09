@@ -34,6 +34,23 @@ def list_abbreviations(
 
 
 @router.get(
+    "/code/{code}",
+    response_model=AbbreviationResponse,
+    responses=_404,
+    summary="Get abbreviation by code",
+    description=(
+        "Returns the full detail of a single abbreviation looked up by its code "
+        "(e.g. 'sts', 'CO', 'k2tog'). The lookup is case-insensitive."
+    ),
+)
+def get_abbreviation_by_code(
+    code: str,
+    db: Session = Depends(get_db),
+) -> AbbreviationResponse:
+    return abbreviation_service.get_by_code(db, code)
+
+
+@router.get(
     "/{abbreviation_id}",
     response_model=AbbreviationResponse,
     responses=_404,

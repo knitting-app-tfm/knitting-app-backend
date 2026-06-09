@@ -6,13 +6,21 @@ from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, UploadF
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import get_current_user
 from app.models.pattern import CraftType, GaugeUnit
-from app.schemas.pattern import ErrorResponse, PatternDetailResponse, PatternResponse
+from app.models.user import User
+from app.schemas.pattern import (
+    ErrorResponse,
+    LineTokens,
+    PatternDetailResponse,
+    PatternResponse,
+)
 from app.services.pattern import (
     EmptyTextError,
     EmptyTitleError,
     FileTooLargeError,
     InvalidFileTypeError,
+    PatternNotConfirmedError,
     pattern_service,
 )
 
@@ -30,6 +38,49 @@ _415 = {415: {"model": ErrorResponse, "description": "File is not a PDF"}}
 
 
 @router.get(
+    "",
+    response_model=list[PatternResponse],
+    summary="List patterns for the authenticated user",
+    description="Returns all patterns belonging to the authenticated user.",
+)
+def list_patterns(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[PatternResponse]:
+    patterns = pattern_service.get_by_user_id(db, current_user.id)
+    return [PatternResponse.model_validate(p) for p in patterns]
+
+
+@router.post(
+    "/{pattern_id}/translate",
+    response_model=list[LineTokens],
+    responses={
+        **_404,
+        400: {"model": ErrorResponse, "description": "Pattern not yet confirmed"},
+    },
+    summary="Translate pattern into tokens",
+    description=(
+        "Tokenizes the pattern text and translates abbreviations. "
+        "On first call (CONFIRMED), tokenizes and caches the result on disk, then advances "
+        "status to TOKENIZED. Subsequent calls reuse the cached file. "
+        "Abbreviation tokens are always resolved against the DB at call time."
+    ),
+)
+def translate_pattern(
+    pattern_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[LineTokens]:
+    try:
+        result = pattern_service.translate(db, pattern_id)
+    except PatternNotConfirmedError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if result is None:
+        raise HTTPException(status_code=404, detail="Pattern not found")
+    return [LineTokens.model_validate(lt) for lt in result]
+
+
+@router.get(
     "/{pattern_id}",
     response_model=PatternDetailResponse,
     responses=_404,
@@ -43,6 +94,7 @@ _415 = {415: {"model": ErrorResponse, "description": "File is not a PDF"}}
 def get_pattern(
     pattern_id: UUID,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> PatternDetailResponse:
     data = pattern_service.get_prefill(db, pattern_id)
     if data is None:
@@ -73,6 +125,7 @@ async def confirm_pattern(
     yarns: str = Form("[]"),
     cover_image: UploadFile | None = File(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> PatternResponse:
     pattern = pattern_service.get_by_id(db, pattern_id)
     if pattern is None:
@@ -129,10 +182,13 @@ async def confirm_pattern(
 async def import_pattern_from_pdf(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> PatternResponse:
     content = await file.read()
     try:
-        pattern = pattern_service.import_from_pdf(db, content, file.content_type)
+        pattern = pattern_service.import_from_pdf(
+            db, content, file.content_type, current_user.id
+        )
     except InvalidFileTypeError as e:
         raise HTTPException(status_code=415, detail=str(e))
     except FileTooLargeError as e:
@@ -154,9 +210,10 @@ async def import_pattern_from_pdf(
 def import_pattern_from_text(
     text: str = Body(media_type="text/plain"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> PatternResponse:
     try:
-        pattern = pattern_service.import_from_text(db, text)
+        pattern = pattern_service.import_from_text(db, text, current_user.id)
     except EmptyTextError as e:
         raise HTTPException(status_code=422, detail=str(e))
     return PatternResponse.model_validate(pattern)
