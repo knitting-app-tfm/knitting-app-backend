@@ -155,6 +155,7 @@ class TestCallLlm:
 class TestImportFromPdf:
     def test_calls_repository_with_only_file_paths(self, service):
         fixed_uuid = uuid.UUID("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+        user_id = uuid.UUID("11111111-2222-3333-4444-555555555555")
         db = MagicMock()
         mock_pattern = MagicMock()
 
@@ -182,7 +183,7 @@ class TestImportFromPdf:
             ) as mock_repo,
         ):
             mock_repo.create.return_value = mock_pattern
-            result = service.import_from_pdf(db, _PDF_BYTES, _PDF_CONTENT_TYPE)
+            result = service.import_from_pdf(db, _PDF_BYTES, _PDF_CONTENT_TYPE, user_id)
 
         mock_repo.create.assert_called_once_with(
             db,
@@ -191,22 +192,26 @@ class TestImportFromPdf:
             status=PatternStatus.IMPORTED,
             original_file_path=f"storage/original/{fixed_uuid}.pdf",
             parsed_json_path=f"storage/parsed/{fixed_uuid}.json",
+            user_id=user_id,
         )
         assert result is mock_pattern
 
     def test_propagates_invalid_type_error(self, service):
         with pytest.raises(InvalidFileTypeError):
-            service.import_from_pdf(MagicMock(), b"data", "text/plain")
+            service.import_from_pdf(MagicMock(), b"data", "text/plain", uuid.uuid4())
 
     def test_propagates_too_large_error(self, service):
         oversized = b"x" * (_MAX_FILE_SIZE + 1)
         with pytest.raises(FileTooLargeError):
-            service.import_from_pdf(MagicMock(), oversized, _PDF_CONTENT_TYPE)
+            service.import_from_pdf(
+                MagicMock(), oversized, _PDF_CONTENT_TYPE, uuid.uuid4()
+            )
 
 
 class TestImportFromText:
     def test_calls_repository_with_only_file_paths(self, service):
         fixed_uuid = uuid.UUID("bbbbbbbb-cccc-dddd-eeee-ffffffffffff")
+        user_id = uuid.UUID("11111111-2222-3333-4444-555555555555")
         db = MagicMock()
         mock_pattern = MagicMock()
 
@@ -230,7 +235,7 @@ class TestImportFromText:
             ) as mock_repo,
         ):
             mock_repo.create.return_value = mock_pattern
-            result = service.import_from_text(db, "cast on 20 stitches...")
+            result = service.import_from_text(db, "cast on 20 stitches...", user_id)
 
         mock_repo.create.assert_called_once_with(
             db,
@@ -239,16 +244,17 @@ class TestImportFromText:
             status=PatternStatus.IMPORTED,
             original_file_path=f"storage/original/{fixed_uuid}.txt",
             parsed_json_path=f"storage/parsed/{fixed_uuid}.json",
+            user_id=user_id,
         )
         assert result is mock_pattern
 
     def test_raises_empty_text_error_for_empty_string(self, service):
         with pytest.raises(EmptyTextError):
-            service.import_from_text(MagicMock(), "")
+            service.import_from_text(MagicMock(), "", uuid.uuid4())
 
     def test_raises_empty_text_error_for_whitespace_only(self, service):
         with pytest.raises(EmptyTextError):
-            service.import_from_text(MagicMock(), "   \n\t  ")
+            service.import_from_text(MagicMock(), "   \n\t  ", uuid.uuid4())
 
 
 class TestGetById:

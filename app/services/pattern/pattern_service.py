@@ -1,5 +1,6 @@
 import json
 import uuid
+from uuid import UUID
 
 from groq import Groq
 from sqlalchemy.orm import Session
@@ -37,7 +38,7 @@ class PatternService:
     # ------------------------------------------------------------------
 
     def import_from_pdf(
-        self, db: Session, content: bytes, content_type: str | None
+        self, db: Session, content: bytes, content_type: str | None, user_id: UUID
     ) -> Pattern:
         self._validate_pdf(content, content_type)
         file_uuid = str(uuid.uuid4())
@@ -47,19 +48,26 @@ class PatternService:
         text = pattern_parser.extract_text_from_pdf(content)
         _, json_str = pattern_llm.get_parsed(self._client, text)
         parsed_path = pattern_storage.save_file(json_str, "parsed", file_uuid, ".json")
-        return self._persist_pattern(db, original_path, parsed_path, PatternSource.PDF)
+        return self._persist_pattern(
+            db, original_path, parsed_path, PatternSource.PDF, user_id
+        )
 
-    def import_from_text(self, db: Session, text: str) -> Pattern:
+    def import_from_text(self, db: Session, text: str, user_id: UUID) -> Pattern:
         if not text or not text.strip():
             raise EmptyTextError("Text cannot be empty")
         file_uuid = str(uuid.uuid4())
         original_path = pattern_storage.save_file(text, "original", file_uuid, ".txt")
         _, json_str = pattern_llm.get_parsed(self._client, text)
         parsed_path = pattern_storage.save_file(json_str, "parsed", file_uuid, ".json")
-        return self._persist_pattern(db, original_path, parsed_path, PatternSource.TEXT)
+        return self._persist_pattern(
+            db, original_path, parsed_path, PatternSource.TEXT, user_id
+        )
 
     def get_by_id(self, db: Session, pattern_id: uuid.UUID) -> Pattern | None:
         return pattern_repository.get_by_id(db, pattern_id)
+
+    def get_by_user_id(self, db: Session, user_id: UUID) -> list[Pattern]:
+        return pattern_repository.get_by_user_id(db, user_id)
 
     def get_prefill(self, db: Session, pattern_id: uuid.UUID) -> dict | None:
         pattern = self.get_by_id(db, pattern_id)
@@ -224,6 +232,7 @@ class PatternService:
         original_path: str,
         parsed_path: str,
         source: PatternSource,
+        user_id: UUID,
     ) -> Pattern:
         return pattern_repository.create(
             db,
@@ -232,6 +241,7 @@ class PatternService:
             status=PatternStatus.IMPORTED,
             original_file_path=original_path,
             parsed_json_path=parsed_path,
+            user_id=user_id,
         )
 
     def _normalize_yarns(self, yarns: list[dict]) -> list[dict]:

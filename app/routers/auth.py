@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import get_current_user
+from app.models.user import User
 from app.schemas.auth import FirebaseRegisterRequest
 from app.schemas.user import RegisterRequest, UserResponse
 from app.services.user import UserAlreadyExistsError, UsernameTakenError, user_service
@@ -31,6 +33,16 @@ def firebase_register(
     except UsernameTakenError:
         raise HTTPException(status_code=409, detail="Username already taken")
     return UserResponse.model_validate(user)
+
+
+@router.get(
+    "/me",
+    response_model=UserResponse,
+    summary="Get current authenticated user",
+    description="Returns the current user's profile. Used by the frontend on startup to verify the session.",
+)
+def me(current_user: User = Depends(get_current_user)) -> UserResponse:
+    return UserResponse.model_validate(current_user)
 
 
 @router.post(
