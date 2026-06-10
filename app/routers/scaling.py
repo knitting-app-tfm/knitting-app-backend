@@ -1,0 +1,63 @@
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from app.core.database import get_db
+from app.core.security import get_current_user
+from app.models.user import User
+from app.schemas.pattern import ErrorResponse
+from app.schemas.scaling import ScalingResponse, ScalingUpsertRequest
+from app.services.scaling import (
+    InvalidSizeLabelError,
+    InvalidSizePositionError,
+    PatternNotFoundError,
+    scaling_service,
+)
+
+router = APIRouter(prefix="/patterns", tags=["scaling"])
+
+_404 = {404: {"model": ErrorResponse, "description": "Pattern not found"}}
+_400 = {400: {"model": ErrorResponse, "description": "Invalid size label or position"}}
+
+
+@router.put(
+    "/{pattern_id}/scaling",
+    response_model=ScalingResponse,
+    responses={**_404, **_400},
+    summary="Upsert size selection for a pattern",
+    description="Sets or updates the selected size for a pattern. The size_label must exist in the pattern's sizes list and size_position must match its index.",
+)
+def upsert_scaling(
+    pattern_id: UUID,
+    body: ScalingUpsertRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ScalingResponse:
+    try:
+        scaling = scaling_service.upsert_size(
+            db, pattern_id, body.size_label, body.size_position
+        )
+    except PatternNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except (InvalidSizeLabelError, InvalidSizePositionError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return ScalingResponse.model_validate(scaling)
+
+
+@router.get(
+    "/{pattern_id}/scaling",
+    response_model=ScalingResponse | None,
+    responses=_404,
+    summary="Get current size selection for a pattern",
+    description="Returns the currently selected size for a pattern, or null if none has been set.",
+)
+def get_scaling(
+    pattern_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ScalingResponse | None:
+    scaling = scaling_service.get_by_pattern_id(db, pattern_id)
+    if scaling is None:
+        return None
+    return ScalingResponse.model_validate(scaling)

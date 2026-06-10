@@ -69,6 +69,7 @@ class Pattern(Base):
     yarns = relationship(
         "PatternYarn", back_populates="pattern", cascade="all, delete-orphan"
     )
+    scaling = relationship("UserScaling", back_populates="pattern", uselist=False)
 
 
 class PatternYarn(Base):
