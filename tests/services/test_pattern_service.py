@@ -426,6 +426,70 @@ class TestConfirm:
         update_kwargs = mock_repo.update.call_args.kwargs
         assert update_kwargs["cover_image_path"] == "storage/covers/existing.jpg"
 
+    def test_confirm_tokenized_pattern_resets_to_confirmed(
+        self, service, confirm_kwargs
+    ):
+        db = MagicMock()
+        pattern = MagicMock()
+        pattern.status = PatternStatus.TOKENIZED
+        pattern.tokens_file_path = "storage/tokens/abc.json"
+        pattern.cover_image_path = None
+
+        with (
+            patch(
+                "app.services.pattern.pattern_service.pattern_repository"
+            ) as mock_repo,
+            patch("app.services.pattern.pattern_service.scaling_repository"),
+            patch("app.services.pattern.pattern_storage.delete_file"),
+        ):
+            mock_repo.update.return_value = MagicMock()
+            service.confirm(db, pattern, **confirm_kwargs)
+
+        update_kwargs = mock_repo.update.call_args.kwargs
+        assert update_kwargs["tokens_file_path"] is None
+        assert update_kwargs["status"] == PatternStatus.CONFIRMED
+
+    def test_confirm_tokenized_pattern_deletes_scaling(self, service, confirm_kwargs):
+        db = MagicMock()
+        pattern = MagicMock()
+        pattern.status = PatternStatus.TOKENIZED
+        pattern.tokens_file_path = None
+        pattern.cover_image_path = None
+
+        with (
+            patch(
+                "app.services.pattern.pattern_service.pattern_repository"
+            ) as mock_repo,
+            patch(
+                "app.services.pattern.pattern_service.scaling_repository"
+            ) as mock_scaling_repo,
+        ):
+            mock_repo.update.return_value = MagicMock()
+            service.confirm(db, pattern, **confirm_kwargs)
+
+        mock_scaling_repo.delete_by_pattern_id.assert_called_once_with(db, pattern.id)
+
+    def test_confirm_tokenized_pattern_deletes_tokens_file(
+        self, service, confirm_kwargs
+    ):
+        db = MagicMock()
+        pattern = MagicMock()
+        pattern.status = PatternStatus.TOKENIZED
+        pattern.tokens_file_path = "storage/tokens/abc.json"
+        pattern.cover_image_path = None
+
+        with (
+            patch(
+                "app.services.pattern.pattern_service.pattern_repository"
+            ) as mock_repo,
+            patch("app.services.pattern.pattern_service.scaling_repository"),
+            patch("app.services.pattern.pattern_storage.delete_file") as mock_delete,
+        ):
+            mock_repo.update.return_value = MagicMock()
+            service.confirm(db, pattern, **confirm_kwargs)
+
+        mock_delete.assert_called_once_with("storage/tokens/abc.json")
+
 
 # ---------------------------------------------------------------------------
 # pattern_llm — get_parsed / mock_response

@@ -66,6 +66,27 @@ class TestUpsert:
         assert isinstance(result, UserScaling)
 
 
+class TestDeleteByPatternId:
+    def test_deletes_scaling_when_exists(self, repo, db):
+        session, query_mock = db
+        existing = MagicMock(spec=UserScaling)
+        query_mock.first.return_value = existing
+
+        repo.delete_by_pattern_id(session, uuid.uuid4())
+
+        session.delete.assert_called_once_with(existing)
+        session.commit.assert_called_once()
+
+    def test_does_nothing_when_not_found(self, repo, db):
+        session, query_mock = db
+        query_mock.first.return_value = None
+
+        repo.delete_by_pattern_id(session, uuid.uuid4())
+
+        session.delete.assert_not_called()
+        session.commit.assert_not_called()
+
+
 class TestGetByPatternId:
     def test_returns_scaling_when_found(self, repo, db):
         session, query_mock = db

@@ -31,5 +31,13 @@ class ScalingRepository:
             db.query(UserScaling).filter(UserScaling.pattern_id == pattern_id).first()
         )
 
+    def delete_by_pattern_id(self, db: Session, pattern_id: UUID) -> None:
+        scaling = (
+            db.query(UserScaling).filter(UserScaling.pattern_id == pattern_id).first()
+        )
+        if scaling is not None:
+            db.delete(scaling)
+            db.commit()
+
 
 scaling_repository = ScalingRepository()
