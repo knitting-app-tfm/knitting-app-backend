@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 from sqlalchemy.orm import Session
 
+from app.models.pattern import GaugeUnit
 from app.models.scaling import UserScaling
 from app.repositories.scaling import ScalingRepository
 
@@ -22,13 +23,24 @@ def repo():
     return ScalingRepository()
 
 
+@pytest.fixture
+def gauge_kwargs():
+    return {
+        "gauge_stitches": 20.0,
+        "gauge_rows": 28.0,
+        "gauge_size": 10.0,
+        "gauge_unit": GaugeUnit.CM,
+        "needle_size": "4mm",
+    }
+
+
 class TestUpsert:
-    def test_creates_new_scaling_when_none_exists(self, repo, db):
+    def test_creates_new_scaling_when_none_exists(self, repo, db, gauge_kwargs):
         session, query_mock = db
         pattern_id = uuid.uuid4()
         query_mock.first.return_value = None
 
-        repo.upsert(session, pattern_id, "M", 2)
+        repo.upsert(session, pattern_id, "M", 2, **gauge_kwargs)
 
         session.add.assert_called_once()
         added = session.add.call_args[0][0]
@@ -36,32 +48,35 @@ class TestUpsert:
         assert added.pattern_id == pattern_id
         assert added.size_label == "M"
         assert added.size_position == 2
+        assert added.gauge_stitches == 20.0
+        assert added.gauge_unit == GaugeUnit.CM
 
-    def test_updates_existing_scaling_without_adding(self, repo, db):
+    def test_updates_existing_scaling_without_adding(self, repo, db, gauge_kwargs):
         session, query_mock = db
         existing = MagicMock(spec=UserScaling)
         query_mock.first.return_value = existing
 
-        repo.upsert(session, uuid.uuid4(), "L", 3)
+        repo.upsert(session, uuid.uuid4(), "L", 3, **gauge_kwargs)
 
         session.add.assert_not_called()
         assert existing.size_label == "L"
         assert existing.size_position == 3
+        assert existing.gauge_stitches == 20.0
 
-    def test_commits_and_refreshes(self, repo, db):
+    def test_commits_and_refreshes(self, repo, db, gauge_kwargs):
         session, query_mock = db
         query_mock.first.return_value = None
 
-        repo.upsert(session, uuid.uuid4(), "S", 1)
+        repo.upsert(session, uuid.uuid4(), "S", 1, **gauge_kwargs)
 
         session.commit.assert_called_once()
         session.refresh.assert_called_once()
 
-    def test_returns_scaling(self, repo, db):
+    def test_returns_scaling(self, repo, db, gauge_kwargs):
         session, query_mock = db
         query_mock.first.return_value = None
 
-        result = repo.upsert(session, uuid.uuid4(), "XS", 0)
+        result = repo.upsert(session, uuid.uuid4(), "XS", 0, **gauge_kwargs)
 
         assert isinstance(result, UserScaling)
 

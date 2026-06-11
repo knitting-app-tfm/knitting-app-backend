@@ -490,6 +490,21 @@ class TestConfirm:
 
         mock_delete.assert_called_once_with("storage/tokens/abc.json")
 
+    def test_confirm_normalizes_none_sizes_to_empty_list(self, service, confirm_kwargs):
+        db = MagicMock()
+        pattern = MagicMock()
+        pattern.cover_image_path = None
+        confirm_kwargs["sizes"] = None
+
+        with patch(
+            "app.services.pattern.pattern_service.pattern_repository"
+        ) as mock_repo:
+            mock_repo.update.return_value = MagicMock()
+            service.confirm(db, pattern, **confirm_kwargs)
+
+        update_kwargs = mock_repo.update.call_args.kwargs
+        assert update_kwargs["sizes"] == []
+
 
 # ---------------------------------------------------------------------------
 # pattern_llm — get_parsed / mock_response
@@ -583,3 +598,35 @@ class TestNormalizeYarns:
         service._normalize_yarns([original])
 
         assert original["yarn_weight"] == "DK"
+
+    def test_empty_string_float_fields_become_none(self, service):
+        result = service._normalize_yarns(
+            [
+                {
+                    "yarn_weight": "DK",
+                    "meters_per_unit": "",
+                    "grams_per_unit": "",
+                    "grams_needed": "",
+                }
+            ]
+        )
+
+        assert result[0]["meters_per_unit"] is None
+        assert result[0]["grams_per_unit"] is None
+        assert result[0]["grams_needed"] is None
+
+    def test_valid_float_fields_are_coerced_to_float(self, service):
+        result = service._normalize_yarns(
+            [
+                {
+                    "yarn_weight": "DK",
+                    "meters_per_unit": "200",
+                    "grams_per_unit": "100.5",
+                    "grams_needed": 300,
+                }
+            ]
+        )
+
+        assert result[0]["meters_per_unit"] == 200.0
+        assert result[0]["grams_per_unit"] == 100.5
+        assert result[0]["grams_needed"] == 300.0

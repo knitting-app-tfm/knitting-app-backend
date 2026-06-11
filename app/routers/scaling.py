@@ -9,6 +9,7 @@ from app.models.user import User
 from app.schemas.pattern import ErrorResponse
 from app.schemas.scaling import ScalingResponse, ScalingUpsertRequest
 from app.services.scaling import (
+    InvalidGaugeError,
     InvalidSizeLabelError,
     InvalidSizePositionError,
     PatternNotFoundError,
@@ -18,7 +19,12 @@ from app.services.scaling import (
 router = APIRouter(prefix="/patterns", tags=["scaling"])
 
 _404 = {404: {"model": ErrorResponse, "description": "Pattern not found"}}
-_400 = {400: {"model": ErrorResponse, "description": "Invalid size label or position"}}
+_400 = {
+    400: {
+        "model": ErrorResponse,
+        "description": "Invalid size label, position, or gauge",
+    }
+}
 
 
 @router.put(
@@ -26,7 +32,7 @@ _400 = {400: {"model": ErrorResponse, "description": "Invalid size label or posi
     response_model=ScalingResponse,
     responses={**_404, **_400},
     summary="Upsert size selection for a pattern",
-    description="Sets or updates the selected size for a pattern. The size_label must exist in the pattern's sizes list and size_position must match its index.",
+    description="Sets or updates the selected size and gauge for a pattern.",
 )
 def upsert_scaling(
     pattern_id: UUID,
@@ -36,11 +42,19 @@ def upsert_scaling(
 ) -> ScalingResponse:
     try:
         scaling = scaling_service.upsert_size(
-            db, pattern_id, body.size_label, body.size_position
+            db,
+            pattern_id,
+            body.size_label,
+            body.size_position,
+            body.gauge_stitches,
+            body.gauge_rows,
+            body.gauge_size,
+            body.gauge_unit,
+            body.needle_size,
         )
     except PatternNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
-    except (InvalidSizeLabelError, InvalidSizePositionError) as e:
+    except (InvalidSizeLabelError, InvalidSizePositionError, InvalidGaugeError) as e:
         raise HTTPException(status_code=400, detail=str(e))
     return ScalingResponse.model_validate(scaling)
 

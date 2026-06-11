@@ -8,3 +8,7 @@ class InvalidSizeLabelError(ValueError):
 
 class InvalidSizePositionError(ValueError):
     pass
+
+
+class InvalidGaugeError(ValueError):
+    pass

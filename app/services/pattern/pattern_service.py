@@ -174,7 +174,7 @@ class PatternService:
             gauge_size=gauge_size,
             gauge_unit=gauge_unit,
             needle_size=needle_size,
-            sizes=sizes,
+            sizes=sizes or [],
             cover_image_path=cover_image_path,
             status=PatternStatus.CONFIRMED,
             **extra_kwargs,
@@ -261,6 +261,15 @@ class PatternService:
                 n["yarn_weight"] = YarnWeight(n.get("yarn_weight"))
             except (ValueError, KeyError, TypeError):
                 n["yarn_weight"] = None
+            for float_field in ("meters_per_unit", "grams_per_unit", "grams_needed"):
+                v = n.get(float_field)
+                if v == "" or v is None:
+                    n[float_field] = None
+                else:
+                    try:
+                        n[float_field] = float(v)
+                    except (ValueError, TypeError):
+                        n[float_field] = None
             n.setdefault("strands", 1)
             result.append(n)
         return result
