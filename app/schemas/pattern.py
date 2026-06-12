@@ -26,7 +26,7 @@ class PatternYarnResponse(BaseModel):
     yarn_weight: YarnWeight | None
     meters_per_unit: float | None
     grams_per_unit: float | None
-    grams_needed: float | None
+    grams_needed: list[float] | None
     strands: int
 
 
@@ -35,7 +35,7 @@ class PatternYarnRequest(BaseModel):
     yarn_weight: YarnWeight | None = None
     meters_per_unit: float | None = None
     grams_per_unit: float | None = None
-    grams_needed: float | None = None
+    grams_needed: list[float] | None = None
     strands: int = 1
 
 
@@ -48,7 +48,7 @@ class PatternYarnPrefillItem(BaseModel):
     yarn_weight: YarnWeight | None = None
     meters_per_unit: float | None = None
     grams_per_unit: float | None = None
-    grams_needed: float | None = None
+    grams_needed: list[float] | None = None
     strands: int = 1
 
 

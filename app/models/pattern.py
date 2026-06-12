@@ -81,7 +81,7 @@ class PatternYarn(Base):
     yarn_weight = Column(Enum(YarnWeight, name="yarnweight"), nullable=True)
     meters_per_unit = Column(Float, nullable=True)
     grams_per_unit = Column(Float, nullable=True)
-    grams_needed = Column(Float, nullable=True)
+    grams_needed = Column(ARRAY(Float), nullable=True)
     strands = Column(Integer, nullable=False, default=1)
 
     pattern = relationship("Pattern", back_populates="yarns")
