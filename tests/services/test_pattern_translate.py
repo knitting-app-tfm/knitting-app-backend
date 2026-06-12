@@ -456,13 +456,26 @@ class TestTokenizeLine:
 
         assert isinstance(tokens[0]["value"], float)
 
-    def test_punctuation_is_dropped(self):
+    def test_punctuation_is_preserved_in_text_tokens(self):
         tokens = pattern_tokenizer.tokenize_line(
             "k2, p1", known_codes={"k2", "p1"}, known_full_names={}
         )
 
-        assert all(t["type"] == "abbreviation" for t in tokens)
-        assert len(tokens) == 2
+        assert tokens[0] == {
+            "type": "abbreviation",
+            "code": "k2",
+            "translated": False,
+            "full_name": None,
+            "quantity": None,
+        }
+        assert tokens[1] == {"type": "text", "value": ","}
+        assert tokens[2] == {
+            "type": "abbreviation",
+            "code": "p1",
+            "translated": False,
+            "full_name": None,
+            "quantity": None,
+        }
 
     def test_abbreviation_matching_is_case_insensitive(self):
         tokens = pattern_tokenizer.tokenize_line(

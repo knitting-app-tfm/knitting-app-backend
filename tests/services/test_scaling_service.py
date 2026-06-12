@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.models.pattern import PatternStatus
+from app.models.pattern import GaugeUnit, PatternStatus
 from app.services.scaling import (
     InvalidGaugeError,
     InvalidSizeLabelError,
@@ -349,6 +349,8 @@ class TestScalePattern:
         sizes=None,
         gauge_stitches=20.0,
         gauge_rows=28.0,
+        gauge_size=10.0,
+        gauge_unit=GaugeUnit.CM,
     ):
         pattern = MagicMock()
         pattern.id = uuid.uuid4()
@@ -356,6 +358,8 @@ class TestScalePattern:
         pattern.sizes = sizes
         pattern.gauge_stitches = gauge_stitches
         pattern.gauge_rows = gauge_rows
+        pattern.gauge_size = gauge_size
+        pattern.gauge_unit = gauge_unit
         return pattern
 
     def _make_scaling(
@@ -364,12 +368,16 @@ class TestScalePattern:
         size_label="M",
         gauge_stitches=20.0,
         gauge_rows=None,
+        gauge_size=10.0,
+        gauge_unit=GaugeUnit.CM,
     ):
         scaling = MagicMock()
         scaling.size_position = size_position
         scaling.size_label = size_label
         scaling.gauge_stitches = gauge_stitches
         scaling.gauge_rows = gauge_rows
+        scaling.gauge_size = gauge_size
+        scaling.gauge_unit = gauge_unit
         return scaling
 
     def _run(self, service, pattern, user_scaling, tokens):
@@ -642,6 +650,81 @@ class TestScalePattern:
 
         assert result["lines"][0]["tokens"][0] == text_token
         assert result["lines"][0]["tokens"][1] == abbr_token
+
+    def test_scale_pattern_different_gauge_units(self, service):
+        # pattern: 23 sts per 10 cm, user: 29 sts per 4 inch
+        # pattern_density = 23/10 = 2.3 sts/cm
+        # user_density = 29 / (4 * 2.54) = 29/10.16 ≈ 2.8543 sts/cm
+        # factor = 2.3 / (29/10.16) = 2.3 * 10.16 / 29 ≈ 0.8059
+        # value=100 → round(100 * 0.8059) = 81
+        pattern = self._make_pattern(
+            gauge_stitches=23.0,
+            gauge_rows=None,
+            gauge_size=10.0,
+            gauge_unit=GaugeUnit.CM,
+        )
+        scaling = self._make_scaling(
+            gauge_stitches=29.0,
+            gauge_rows=None,
+            gauge_size=4.0,
+            gauge_unit=GaugeUnit.INCH,
+        )
+        tokens = [
+            self._line(
+                {"type": "number", "value": 100, "unit": "sts", "scalable": True}
+            )
+        ]
+
+        result = self._run(service, pattern, scaling, tokens)
+
+        token = result["lines"][0]["tokens"][0]
+        assert token["value"] == 81
+        assert token["scaled"] is True
+
+    def test_scale_pattern_different_gauge_sizes(self, service):
+        # pattern: 20 sts per 10 cm, user: 12 sts per 4 cm (both CM)
+        # pattern_density = 20/10 = 2.0 sts/cm
+        # user_density = 12/4 = 3.0 sts/cm
+        # factor = 2.0/3.0 ≈ 0.6667
+        # value=90 → round(90 * 2/3) = 60
+        pattern = self._make_pattern(
+            gauge_stitches=20.0,
+            gauge_rows=None,
+            gauge_size=10.0,
+            gauge_unit=GaugeUnit.CM,
+        )
+        scaling = self._make_scaling(
+            gauge_stitches=12.0,
+            gauge_rows=None,
+            gauge_size=4.0,
+            gauge_unit=GaugeUnit.CM,
+        )
+        tokens = [
+            self._line({"type": "number", "value": 90, "unit": "sts", "scalable": True})
+        ]
+
+        result = self._run(service, pattern, scaling, tokens)
+
+        token = result["lines"][0]["tokens"][0]
+        assert token["value"] == 60
+        assert token["scaled"] is True
+
+    def test_scale_pattern_missing_pattern_gauge(self, service):
+        pattern = self._make_pattern(
+            gauge_stitches=20.0, gauge_rows=None, gauge_size=None
+        )
+        scaling = self._make_scaling(gauge_stitches=20.0, gauge_rows=None)
+        db = MagicMock()
+
+        with (
+            patch("app.services.scaling.scaling_service.pattern_repository") as mock_pr,
+            patch("app.services.scaling.scaling_service.scaling_repository") as mock_sr,
+        ):
+            mock_pr.get_by_id.return_value = pattern
+            mock_sr.get_by_pattern_id.return_value = scaling
+
+            with pytest.raises(InvalidGaugeError, match="Pattern gauge is required"):
+                service.scale_pattern(db, pattern.id)
 
     def test_scale_pattern_pattern_not_found(self, service):
         db = MagicMock()
