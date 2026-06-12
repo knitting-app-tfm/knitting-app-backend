@@ -91,6 +91,32 @@ class TestInchDetection:
         assert len(inch_tokens) == 1
         assert inch_tokens[0]["value"] == 4
 
+    # --- typographic / curly quote variants ---
+
+    def test_number_right_curly_double_quote(self):
+        # U+201D — what PDFs typically produce for inch marks
+        tokens = _tok("4”")
+        assert len(tokens) == 1
+        assert tokens[0]["unit"] == "inch"
+
+    def test_size_group_right_curly_double_quote(self):
+        tokens = _tok("10 (11, 12, 12.5, 13)”", num_sizes=5)
+        assert len(tokens) == 1
+        t = tokens[0]
+        assert t["type"] == "size_group"
+        assert t["unit"] == "inch"
+
+    def test_real_world_split_line(self):
+        # Pattern: "10 (11, 12, 12.5, 13)" FROM CAST ON"
+        # where " is U+201D (right curly double quote)
+        tokens = _tok("10 (11, 12, 12.5, 13)” FROM CAST ON", num_sizes=5)
+        sg = next(t for t in tokens if t["type"] == "size_group")
+        assert sg["unit"] == "inch"
+        assert sg["values"] == [10, 11, 12, 12.5, 13]
+        # The inch mark must NOT appear in any text token
+        text_values = " ".join(t["value"] for t in tokens if t["type"] == "text")
+        assert "”" not in text_values
+
     # --- no false positives ---
 
     def test_plain_number_no_inch_mark(self):

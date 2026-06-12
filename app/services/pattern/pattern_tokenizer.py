@@ -42,8 +42,16 @@ _NON_SCALABLE_UNITS: frozenset[str] = frozenset(
 )
 _ALL_UNITS: frozenset[str] = _SCALABLE_UNITS | _NON_SCALABLE_UNITS
 
+# All single characters that mean "inches": ASCII straight quote, left/right curly
+# double quote, and Unicode double prime. PDFs commonly produce the curly variants.
+_INCH_CHARS: str = '"“”″'
+# Full set used for normalization (includes the two-single-quote variant).
+_INCH_MARKS: frozenset[str] = frozenset({"''", *_INCH_CHARS})
+
 _NUMBER_UNIT_RE = re.compile(
-    r"(\d+(?:\.\d+)?)\s*(''|\"|(?:stitch(?:es)?|rounds?|rows?|sts?|inch|in|mm|cm|oz|g)\b)",
+    r"(\d+(?:\.\d+)?)\s*(["
+    + _INCH_CHARS
+    + r"]|''|(?:stitch(?:es)?|rounds?|rows?|sts?|inch|in|mm|cm|oz|g)\b)",
     re.IGNORECASE,
 )
 
@@ -53,8 +61,8 @@ _WORD_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9]*")
 
 _UNIT_PEEK_RE = re.compile(r"\s*([a-zA-Z][a-zA-Z0-9]*)")
 
-# Matches " or '' (both mean inches) optionally preceded by whitespace.
-_INCH_MARK_RE = re.compile(r'\s*(?:"|\'\')')
+# Matches any inch mark (straight or typographic) optionally preceded by whitespace.
+_INCH_MARK_RE = re.compile(r"\s*(?:[" + _INCH_CHARS + r"]|'')")
 
 # Matches words like "k2", "p1", "K23" — letter prefix followed by trailing digits only.
 _SUFFIXED_ABBR_RE = re.compile(r"^([a-zA-Z]+)\d+$")
@@ -200,10 +208,15 @@ def tokenize_line(
                     j = pos
                     while j < len(line) and line[j].isspace():
                         j += 1
-                    if j < len(line) and line[j] == '"':
+                    if j < len(line) and line[j] in _INCH_CHARS:
                         pos = j + 1
                     elif j + 1 < len(line) and line[j : j + 2] == "''":
                         pos = j + 2
+                elif unit is not None:
+                    # consume the letter unit keyword so it doesn't reappear as a text/abbreviation token
+                    um = _UNIT_PEEK_RE.match(line, pos)
+                    if um:
+                        pos = um.end()
                 continue
 
         # 2. Number followed by unit keyword
@@ -212,7 +225,7 @@ def tokenize_line(
             flush_text()
             raw = float(m.group(1))
             value: int | float = int(raw) if raw.is_integer() else raw
-            unit_str = "inch" if m.group(2) in ('"', "''") else m.group(2)
+            unit_str = "inch" if m.group(2) in _INCH_MARKS else m.group(2)
             tokens.append(
                 {
                     "type": "number",

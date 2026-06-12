@@ -396,15 +396,15 @@ class TestTokenizeLine:
         assert sg["unit"] == "sts"
         assert sg["scalable"] is True
 
-    def test_size_group_does_not_consume_following_abbreviation(self):
-        """The unit-peek must not remove the abbreviation token from the stream."""
+    def test_size_group_consumes_following_unit_keyword(self):
+        """The unit keyword after a size group is consumed to avoid duplication."""
         tokens = pattern_tokenizer.tokenize_line(
             "147 (159) 174 sts", known_codes={"sts"}, known_full_names={}
         )
 
         types = [t["type"] for t in tokens]
         assert "size_group" in types
-        assert "abbreviation" in types
+        assert "abbreviation" not in types
 
     def test_number_with_non_scalable_unit(self):
         tokens = pattern_tokenizer.tokenize_line(
@@ -505,10 +505,10 @@ class TestTokenizeLine:
         assert tokens[0] == {"type": "text", "value": "Cast on"}
         assert tokens[1]["type"] == "size_group"
         assert tokens[1]["values"] == [147, 159, 174]
-        assert tokens[2]["type"] == "abbreviation"
-        assert tokens[2]["code"] == "sts"
-        assert tokens[3] == {"type": "text", "value": "on"}
-        assert tokens[4] == {
+        assert tokens[1]["unit"] == "sts"
+        # "sts" is consumed as the size_group unit — no duplicate abbreviation token
+        assert tokens[2] == {"type": "text", "value": "on"}
+        assert tokens[3] == {
             "type": "number",
             "value": 3.5,
             "unit": "mm",
