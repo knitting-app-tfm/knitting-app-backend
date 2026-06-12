@@ -53,6 +53,10 @@ def _scale_token(
             else:
                 rows_warning = True
 
+        # Value differs across sizes even without gauge math → still size-specific
+        if extracted != values[0]:
+            scaled = True
+
         new_token: dict = {
             "type": "number",
             "value": extracted,

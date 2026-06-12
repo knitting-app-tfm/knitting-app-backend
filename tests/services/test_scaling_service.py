@@ -520,7 +520,8 @@ class TestScalePattern:
         assert result["rows_warning"] is False
 
     def test_scale_pattern_size_group_rows_without_factor(self, service):
-        # size_group with row unit but no factor_rows → keep value, set rows_warning
+        # size_group with row unit but no factor_rows → value unchanged, rows_warning=True
+        # values differ by size so scaled=True even without gauge math
         pattern = self._make_pattern(
             sizes=["S", "M", "L"], gauge_stitches=20.0, gauge_rows=None
         )
@@ -543,9 +544,85 @@ class TestScalePattern:
         token = result["lines"][0]["tokens"][0]
         assert token["type"] == "number"
         assert token["value"] == 10
-        assert token["scaled"] is False
+        assert token["scaled"] is True  # values[1]=10 != values[0]=8 → size-specific
         assert token.get("rows_warning") is True
         assert result["rows_warning"] is True
+
+    def test_scale_pattern_size_group_non_scalable_different_values(self, service):
+        # cm unit is not gauge-scalable; selected value differs from base → scaled=True
+        pattern = self._make_pattern(
+            sizes=["XS", "S", "M", "L", "XL"], gauge_stitches=20.0, gauge_rows=None
+        )
+        scaling = self._make_scaling(
+            size_position=3, size_label="L", gauge_stitches=20.0, gauge_rows=None
+        )
+        tokens = [
+            self._line(
+                {
+                    "type": "size_group",
+                    "values": [10, 10, 11.4, 12.7, 12.7],
+                    "unit": "cm",
+                    "scalable": False,
+                }
+            )
+        ]
+
+        result = self._run(service, pattern, scaling, tokens)
+
+        token = result["lines"][0]["tokens"][0]
+        assert token["type"] == "number"
+        assert token["value"] == 12.7
+        assert token["scaled"] is True  # 12.7 != values[0]=10
+
+    def test_scale_pattern_size_group_non_scalable_same_value(self, service):
+        # cm unit, all values identical → scaled=False (no size or gauge difference)
+        pattern = self._make_pattern(
+            sizes=["XS", "S", "M", "L", "XL"], gauge_stitches=20.0, gauge_rows=None
+        )
+        scaling = self._make_scaling(
+            size_position=2, size_label="M", gauge_stitches=20.0, gauge_rows=None
+        )
+        tokens = [
+            self._line(
+                {
+                    "type": "size_group",
+                    "values": [10, 10, 10, 10, 10],
+                    "unit": "cm",
+                    "scalable": False,
+                }
+            )
+        ]
+
+        result = self._run(service, pattern, scaling, tokens)
+
+        token = result["lines"][0]["tokens"][0]
+        assert token["value"] == 10
+        assert token["scaled"] is False  # 10 == values[0]=10 → no difference
+
+    def test_scale_pattern_size_group_no_unit_different_values(self, service):
+        # size_group with no unit (e.g. a repeat count); value differs → scaled=True
+        pattern = self._make_pattern(
+            sizes=["S", "M", "L"], gauge_stitches=20.0, gauge_rows=None
+        )
+        scaling = self._make_scaling(
+            size_position=2, size_label="L", gauge_stitches=20.0, gauge_rows=None
+        )
+        tokens = [
+            self._line(
+                {
+                    "type": "size_group",
+                    "values": [2, 2, 3],
+                    "unit": None,
+                    "scalable": False,
+                }
+            )
+        ]
+
+        result = self._run(service, pattern, scaling, tokens)
+
+        token = result["lines"][0]["tokens"][0]
+        assert token["value"] == 3
+        assert token["scaled"] is True  # 3 != values[0]=2
 
     def test_scale_pattern_text_and_abbreviation_pass_through(self, service):
         # text and abbreviation tokens are returned unchanged
