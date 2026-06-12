@@ -3,6 +3,8 @@ from app.services.scaling.scaling_exceptions import (
     InvalidSizeLabelError,
     InvalidSizePositionError,
     PatternNotFoundError,
+    PatternNotTokenizedError,
+    ScalingConfigNotFoundError,
 )
 from app.services.scaling.scaling_service import ScalingService, scaling_service
 
@@ -11,6 +13,8 @@ __all__ = [
     "InvalidSizeLabelError",
     "InvalidSizePositionError",
     "PatternNotFoundError",
+    "PatternNotTokenizedError",
+    "ScalingConfigNotFoundError",
     "ScalingService",
     "scaling_service",
 ]

@@ -7,12 +7,18 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 from app.schemas.pattern import ErrorResponse
-from app.schemas.scaling import ScalingResponse, ScalingUpsertRequest
+from app.schemas.scaling import (
+    ScaledPatternResponse,
+    ScalingResponse,
+    ScalingUpsertRequest,
+)
 from app.services.scaling import (
     InvalidGaugeError,
     InvalidSizeLabelError,
     InvalidSizePositionError,
     PatternNotFoundError,
+    PatternNotTokenizedError,
+    ScalingConfigNotFoundError,
     scaling_service,
 )
 
@@ -75,3 +81,33 @@ def get_scaling(
     if scaling is None:
         return None
     return ScalingResponse.model_validate(scaling)
+
+
+@router.get(
+    "/{pattern_id}/scaled",
+    response_model=ScaledPatternResponse,
+    responses={
+        **_404,
+        400: {
+            "model": ErrorResponse,
+            "description": "Pattern not tokenized or no scaling config",
+        },
+    },
+    summary="Get scaled pattern for the selected size and gauge",
+    description=(
+        "Returns the tokenized pattern with all numeric values scaled to the user's gauge. "
+        "The pattern must be translated (TOKENIZED) and a size/gauge selection must exist."
+    ),
+)
+def get_scaled_pattern(
+    pattern_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ScaledPatternResponse:
+    try:
+        result = scaling_service.scale_pattern(db, pattern_id)
+    except PatternNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except (PatternNotTokenizedError, ScalingConfigNotFoundError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return ScaledPatternResponse.model_validate(result)

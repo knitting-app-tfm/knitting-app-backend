@@ -12,3 +12,11 @@ class InvalidSizePositionError(ValueError):
 
 class InvalidGaugeError(ValueError):
     pass
+
+
+class PatternNotTokenizedError(ValueError):
+    pass
+
+
+class ScalingConfigNotFoundError(ValueError):
+    pass

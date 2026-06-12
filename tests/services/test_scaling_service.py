@@ -3,11 +3,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from app.models.pattern import PatternStatus
 from app.services.scaling import (
     InvalidGaugeError,
     InvalidSizeLabelError,
     InvalidSizePositionError,
     PatternNotFoundError,
+    PatternNotTokenizedError,
+    ScalingConfigNotFoundError,
     ScalingService,
 )
 
@@ -294,6 +297,29 @@ class TestUpsertGauge:
                     needle_size=None,
                 )
 
+    def test_upsert_gauge_rows_zero_value(self, service, pattern_with_sizes):
+        db = MagicMock()
+
+        with patch(
+            "app.services.scaling.scaling_service.pattern_repository"
+        ) as mock_pattern_repo:
+            mock_pattern_repo.get_by_id.return_value = pattern_with_sizes
+
+            with pytest.raises(
+                InvalidGaugeError, match="Value must be greater than zero"
+            ):
+                service.upsert_size(
+                    db,
+                    pattern_with_sizes.id,
+                    size_label="M",
+                    size_position=2,
+                    gauge_stitches=20.0,
+                    gauge_rows=0.0,
+                    gauge_size=10.0,
+                    gauge_unit="CM",
+                    needle_size=None,
+                )
+
     def test_upsert_gauge_invalid_unit(self, service, pattern_with_sizes):
         db = MagicMock()
 
@@ -314,3 +340,294 @@ class TestUpsertGauge:
                     gauge_unit="YARDS",
                     needle_size=None,
                 )
+
+
+class TestScalePattern:
+    def _make_pattern(
+        self,
+        status=None,
+        sizes=None,
+        gauge_stitches=20.0,
+        gauge_rows=28.0,
+    ):
+        pattern = MagicMock()
+        pattern.id = uuid.uuid4()
+        pattern.status = status if status is not None else PatternStatus.TOKENIZED
+        pattern.sizes = sizes
+        pattern.gauge_stitches = gauge_stitches
+        pattern.gauge_rows = gauge_rows
+        return pattern
+
+    def _make_scaling(
+        self,
+        size_position=0,
+        size_label="M",
+        gauge_stitches=20.0,
+        gauge_rows=None,
+    ):
+        scaling = MagicMock()
+        scaling.size_position = size_position
+        scaling.size_label = size_label
+        scaling.gauge_stitches = gauge_stitches
+        scaling.gauge_rows = gauge_rows
+        return scaling
+
+    def _run(self, service, pattern, user_scaling, tokens):
+        db = MagicMock()
+        with (
+            patch("app.services.scaling.scaling_service.pattern_repository") as mock_pr,
+            patch("app.services.scaling.scaling_service.scaling_repository") as mock_sr,
+            patch("app.services.scaling.scaling_service.pattern_storage") as mock_ps,
+        ):
+            mock_pr.get_by_id.return_value = pattern
+            mock_sr.get_by_pattern_id.return_value = user_scaling
+            mock_ps.read_tokens_file.return_value = tokens
+            return service.scale_pattern(db, pattern.id)
+
+    def _line(self, *tokens):
+        return {
+            "line": 1,
+            "bold": False,
+            "italic": False,
+            "font_size": None,
+            "tokens": list(tokens),
+        }
+
+    def test_scale_pattern_stitches(self, service):
+        # pattern: 20 sts/10cm, user: 25 sts/10cm → factor = 0.8
+        pattern = self._make_pattern(gauge_stitches=20.0, gauge_rows=None)
+        scaling = self._make_scaling(gauge_stitches=25.0, gauge_rows=None)
+        tokens = [
+            self._line(
+                {"type": "number", "value": 100, "unit": "sts", "scalable": True}
+            )
+        ]
+
+        result = self._run(service, pattern, scaling, tokens)
+
+        token = result["lines"][0]["tokens"][0]
+        assert token["value"] == 80  # round(100 * 0.8)
+        assert token["scaled"] is True
+        assert result["rows_warning"] is False
+
+    def test_scale_pattern_rows_with_gauge(self, service):
+        # pattern: 28 rows/10cm, user: 30 rows/10cm → factor ≈ 0.933
+        pattern = self._make_pattern(gauge_stitches=20.0, gauge_rows=28.0)
+        scaling = self._make_scaling(gauge_stitches=20.0, gauge_rows=30.0)
+        tokens = [
+            self._line(
+                {"type": "number", "value": 30, "unit": "rows", "scalable": True}
+            )
+        ]
+
+        result = self._run(service, pattern, scaling, tokens)
+
+        token = result["lines"][0]["tokens"][0]
+        assert token["value"] == 28  # round(30 * 28/30)
+        assert token["scaled"] is True
+        assert result["rows_warning"] is False
+
+    def test_scale_pattern_rows_without_gauge(self, service):
+        # user didn't provide row gauge → factor_rows is None
+        pattern = self._make_pattern(gauge_stitches=20.0, gauge_rows=None)
+        scaling = self._make_scaling(gauge_stitches=20.0, gauge_rows=None)
+        tokens = [
+            self._line(
+                {"type": "number", "value": 30, "unit": "rows", "scalable": True}
+            )
+        ]
+
+        result = self._run(service, pattern, scaling, tokens)
+
+        token = result["lines"][0]["tokens"][0]
+        assert token["value"] == 30  # unchanged
+        assert token["scaled"] is False
+        assert result["rows_warning"] is True
+
+    def test_scale_pattern_non_scalable_units(self, service):
+        pattern = self._make_pattern(gauge_stitches=20.0, gauge_rows=None)
+        scaling = self._make_scaling(gauge_stitches=25.0, gauge_rows=None)
+        tokens = [
+            self._line(
+                {"type": "number", "value": 4.5, "unit": "mm", "scalable": False},
+                {"type": "number", "value": 50, "unit": "cm", "scalable": False},
+            )
+        ]
+
+        result = self._run(service, pattern, scaling, tokens)
+
+        t0 = result["lines"][0]["tokens"][0]
+        t1 = result["lines"][0]["tokens"][1]
+        assert t0["value"] == 4.5
+        assert t0["scaled"] is False
+        assert t1["value"] == 50
+        assert t1["scaled"] is False
+
+    def test_scale_pattern_size_group(self, service):
+        # 3 sizes, size_position=1 → extract values[1] then scale
+        pattern = self._make_pattern(
+            sizes=["S", "M", "L"], gauge_stitches=20.0, gauge_rows=None
+        )
+        scaling = self._make_scaling(
+            size_position=1, size_label="M", gauge_stitches=25.0
+        )
+        # values=[80, 90, 100], num_sizes=3, len=3 → no offset → idx=1 → 90
+        # factor_stitches = 20/25 = 0.8 → round(90*0.8) = 72
+        tokens = [
+            self._line(
+                {
+                    "type": "size_group",
+                    "values": [80, 90, 100],
+                    "unit": "sts",
+                    "scalable": True,
+                }
+            )
+        ]
+
+        result = self._run(service, pattern, scaling, tokens)
+
+        token = result["lines"][0]["tokens"][0]
+        assert token["type"] == "number"
+        assert token["value"] == 72
+        assert token["scaled"] is True
+
+    def test_scale_pattern_size_group_rows_with_factor(self, service):
+        # size_group with row unit and factor_rows available → scale and mark scaled
+        pattern = self._make_pattern(
+            sizes=["S", "M", "L"], gauge_stitches=20.0, gauge_rows=28.0
+        )
+        scaling = self._make_scaling(
+            size_position=1, size_label="M", gauge_stitches=20.0, gauge_rows=30.0
+        )
+        # values=[8, 10, 12], idx=1 → extracted=10, factor=28/30 → round(10*0.933)=9
+        tokens = [
+            self._line(
+                {
+                    "type": "size_group",
+                    "values": [8, 10, 12],
+                    "unit": "rows",
+                    "scalable": True,
+                }
+            )
+        ]
+
+        result = self._run(service, pattern, scaling, tokens)
+
+        token = result["lines"][0]["tokens"][0]
+        assert token["type"] == "number"
+        assert token["value"] == 9
+        assert token["scaled"] is True
+        assert result["rows_warning"] is False
+
+    def test_scale_pattern_size_group_rows_without_factor(self, service):
+        # size_group with row unit but no factor_rows → keep value, set rows_warning
+        pattern = self._make_pattern(
+            sizes=["S", "M", "L"], gauge_stitches=20.0, gauge_rows=None
+        )
+        scaling = self._make_scaling(
+            size_position=1, size_label="M", gauge_stitches=20.0, gauge_rows=None
+        )
+        tokens = [
+            self._line(
+                {
+                    "type": "size_group",
+                    "values": [8, 10, 12],
+                    "unit": "rows",
+                    "scalable": True,
+                }
+            )
+        ]
+
+        result = self._run(service, pattern, scaling, tokens)
+
+        token = result["lines"][0]["tokens"][0]
+        assert token["type"] == "number"
+        assert token["value"] == 10
+        assert token["scaled"] is False
+        assert token.get("rows_warning") is True
+        assert result["rows_warning"] is True
+
+    def test_scale_pattern_text_and_abbreviation_pass_through(self, service):
+        # text and abbreviation tokens are returned unchanged
+        pattern = self._make_pattern(gauge_stitches=20.0, gauge_rows=None)
+        scaling = self._make_scaling(gauge_stitches=25.0, gauge_rows=None)
+        text_token = {"type": "text", "value": "Cast on"}
+        abbr_token = {
+            "type": "abbreviation",
+            "code": "k",
+            "translated": True,
+            "full_name": "knit",
+            "quantity": None,
+        }
+        tokens = [self._line(text_token, abbr_token)]
+
+        result = self._run(service, pattern, scaling, tokens)
+
+        assert result["lines"][0]["tokens"][0] == text_token
+        assert result["lines"][0]["tokens"][1] == abbr_token
+
+    def test_scale_pattern_pattern_not_found(self, service):
+        db = MagicMock()
+
+        with patch(
+            "app.services.scaling.scaling_service.pattern_repository"
+        ) as mock_pr:
+            mock_pr.get_by_id.return_value = None
+
+            with pytest.raises(PatternNotFoundError):
+                service.scale_pattern(db, uuid.uuid4())
+
+    def test_scale_pattern_not_tokenized(self, service):
+        db = MagicMock()
+        pattern = MagicMock()
+        pattern.status = PatternStatus.CONFIRMED
+
+        with patch(
+            "app.services.scaling.scaling_service.pattern_repository"
+        ) as mock_pr:
+            mock_pr.get_by_id.return_value = pattern
+
+            with pytest.raises(PatternNotTokenizedError):
+                service.scale_pattern(db, uuid.uuid4())
+
+    def test_scale_pattern_no_scaling(self, service):
+        db = MagicMock()
+        pattern = MagicMock()
+        pattern.status = PatternStatus.TOKENIZED
+
+        with (
+            patch("app.services.scaling.scaling_service.pattern_repository") as mock_pr,
+            patch("app.services.scaling.scaling_service.scaling_repository") as mock_sr,
+        ):
+            mock_pr.get_by_id.return_value = pattern
+            mock_sr.get_by_pattern_id.return_value = None
+
+            with pytest.raises(ScalingConfigNotFoundError):
+                service.scale_pattern(db, uuid.uuid4())
+
+
+class TestGetByPatternId:
+    def test_returns_scaling_when_found(self, service):
+        db = MagicMock()
+        mock_scaling = MagicMock()
+
+        with patch(
+            "app.services.scaling.scaling_service.scaling_repository"
+        ) as mock_sr:
+            mock_sr.get_by_pattern_id.return_value = mock_scaling
+
+            result = service.get_by_pattern_id(db, uuid.uuid4())
+
+        assert result is mock_scaling
+
+    def test_returns_none_when_not_found(self, service):
+        db = MagicMock()
+
+        with patch(
+            "app.services.scaling.scaling_service.scaling_repository"
+        ) as mock_sr:
+            mock_sr.get_by_pattern_id.return_value = None
+
+            result = service.get_by_pattern_id(db, uuid.uuid4())
+
+        assert result is None
