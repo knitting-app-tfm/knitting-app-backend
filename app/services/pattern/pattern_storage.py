@@ -28,3 +28,11 @@ def read_tokens_file(stored_path: str) -> list[dict]:
         return json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return []
+
+
+def delete_file(stored_path: str) -> None:
+    try:
+        path = Path(settings.STORAGE_BASE_PATH) / stored_path.removeprefix("storage/")
+        path.unlink(missing_ok=True)
+    except Exception:
+        pass

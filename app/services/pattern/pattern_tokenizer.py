@@ -42,8 +42,16 @@ _NON_SCALABLE_UNITS: frozenset[str] = frozenset(
 )
 _ALL_UNITS: frozenset[str] = _SCALABLE_UNITS | _NON_SCALABLE_UNITS
 
+# All single characters that mean "inches": ASCII straight quote, left/right curly
+# double quote, and Unicode double prime. PDFs commonly produce the curly variants.
+_INCH_CHARS: str = '"“”″'
+# Full set used for normalization (includes the two-single-quote variant).
+_INCH_MARKS: frozenset[str] = frozenset({"''", *_INCH_CHARS})
+
 _NUMBER_UNIT_RE = re.compile(
-    r"(\d+(?:\.\d+)?)\s*(stitch(?:es)?|rounds?|rows?|sts?|inch|in|mm|cm|oz|g)\b",
+    r"(\d+(?:\.\d+)?)\s*(["
+    + _INCH_CHARS
+    + r"]|''|(?:stitch(?:es)?|rounds?|rows?|sts?|inch|in|mm|cm|oz|g)\b)",
     re.IGNORECASE,
 )
 
@@ -52,6 +60,9 @@ _BARE_NUMBER_RE = re.compile(r"\d+(?:\.\d+)?")
 _WORD_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9]*")
 
 _UNIT_PEEK_RE = re.compile(r"\s*([a-zA-Z][a-zA-Z0-9]*)")
+
+# Matches any inch mark (straight or typographic) optionally preceded by whitespace.
+_INCH_MARK_RE = re.compile(r"\s*(?:[" + _INCH_CHARS + r"]|'')")
 
 # Matches words like "k2", "p1", "K23" — letter prefix followed by trailing digits only.
 _SUFFIXED_ABBR_RE = re.compile(r"^([a-zA-Z]+)\d+$")
@@ -68,7 +79,12 @@ def _count_size_values(match_str: str) -> int:
 
 
 def _peek_unit(remaining: str) -> str | None:
-    """Return the raw unit keyword from the next word in *remaining*, or None."""
+    """Return the raw unit keyword from the next word in *remaining*, or None.
+
+    Also detects " and '' as inch markers, returning '"' for both.
+    """
+    if _INCH_MARK_RE.match(remaining):
+        return "inch"
     m = _UNIT_PEEK_RE.match(remaining)
     if m:
         word = m.group(1)
@@ -132,13 +148,15 @@ def tokenize_line(
     full_name_at = find_full_name_matches(line, known_full_names)
 
     tokens: list[dict] = []
-    text_words: list[str] = []
+    text_buf = ""
     pos = 0
 
     def flush_text() -> None:
-        if text_words:
-            tokens.append({"type": "text", "value": " ".join(text_words)})
-            text_words.clear()
+        nonlocal text_buf
+        stripped = text_buf.strip()
+        if stripped:
+            tokens.append({"type": "text", "value": stripped})
+        text_buf = ""
 
     while pos < len(line):
         # 0. Full-name match pre-empts all other rules
@@ -158,6 +176,7 @@ def tokenize_line(
             continue
 
         if line[pos].isspace():
+            text_buf += line[pos]
             pos += 1
             continue
 
@@ -184,6 +203,20 @@ def tokenize_line(
                     }
                 )
                 pos = m.end()
+                if unit == "inch":
+                    # consume the inch mark so it isn't treated as stray punctuation
+                    j = pos
+                    while j < len(line) and line[j].isspace():
+                        j += 1
+                    if j < len(line) and line[j] in _INCH_CHARS:
+                        pos = j + 1
+                    elif j + 1 < len(line) and line[j : j + 2] == "''":
+                        pos = j + 2
+                elif unit is not None:
+                    # consume the letter unit keyword so it doesn't reappear as a text/abbreviation token
+                    um = _UNIT_PEEK_RE.match(line, pos)
+                    if um:
+                        pos = um.end()
                 continue
 
         # 2. Number followed by unit keyword
@@ -192,7 +225,7 @@ def tokenize_line(
             flush_text()
             raw = float(m.group(1))
             value: int | float = int(raw) if raw.is_integer() else raw
-            unit_str = m.group(2)
+            unit_str = "inch" if m.group(2) in _INCH_MARKS else m.group(2)
             tokens.append(
                 {
                     "type": "number",
@@ -306,11 +339,12 @@ def tokenize_line(
                 continue
 
             # 4d. Plain text
-            text_words.append(word)
+            text_buf += word
             pos = m.end()
             continue
 
-        pos += 1  # skip punctuation and unrecognised characters
+        text_buf += line[pos]  # preserve punctuation and unrecognised characters
+        pos += 1
 
     flush_text()
     return tokens

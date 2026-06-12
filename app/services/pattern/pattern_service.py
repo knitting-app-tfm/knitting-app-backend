@@ -16,6 +16,7 @@ from app.models.pattern import (
 )
 from app.repositories.abbreviation import abbreviation_repository
 from app.repositories.pattern import pattern_repository
+from app.repositories.scaling import scaling_repository
 from app.services.pattern import pattern_llm, pattern_parser, pattern_storage
 from app.services.pattern.pattern_exceptions import (
     EmptyTextError,
@@ -155,6 +156,13 @@ class PatternService:
                 cover_bytes, "covers", str(pattern.id), cover_suffix
             )
 
+        extra_kwargs = {}
+        if pattern.status == PatternStatus.TOKENIZED:
+            scaling_repository.delete_by_pattern_id(db, pattern.id)
+            if pattern.tokens_file_path:
+                pattern_storage.delete_file(pattern.tokens_file_path)
+            extra_kwargs["tokens_file_path"] = None
+
         return pattern_repository.update(
             db,
             pattern,
@@ -166,9 +174,10 @@ class PatternService:
             gauge_size=gauge_size,
             gauge_unit=gauge_unit,
             needle_size=needle_size,
-            sizes=sizes,
+            sizes=sizes or [],
             cover_image_path=cover_image_path,
             status=PatternStatus.CONFIRMED,
+            **extra_kwargs,
         )
 
     def translate(self, db: Session, pattern_id: uuid.UUID) -> list[dict] | None:
@@ -252,6 +261,15 @@ class PatternService:
                 n["yarn_weight"] = YarnWeight(n.get("yarn_weight"))
             except (ValueError, KeyError, TypeError):
                 n["yarn_weight"] = None
+            for float_field in ("meters_per_unit", "grams_per_unit", "grams_needed"):
+                v = n.get(float_field)
+                if v == "" or v is None:
+                    n[float_field] = None
+                else:
+                    try:
+                        n[float_field] = float(v)
+                    except (ValueError, TypeError):
+                        n[float_field] = None
             n.setdefault("strands", 1)
             result.append(n)
         return result

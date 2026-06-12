@@ -9,14 +9,42 @@ from app.core.config import settings
 from app.models.pattern import Pattern, PatternSource
 from app.schemas.pattern import TextSegment
 
+_UNIT_KEYWORDS: frozenset[str] = frozenset(
+    {
+        "stitches",
+        "stitch",
+        "sts",
+        "st",
+        "rows",
+        "row",
+        "rounds",
+        "round",
+        "mm",
+        "cm",
+        "g",
+        "oz",
+        "in",
+        "inch",
+    }
+)
+
+_UNIT_KEYWORD_RE = re.compile(
+    r"^("
+    + "|".join(sorted(_UNIT_KEYWORDS, key=len, reverse=True))
+    + r")(?:[^a-zA-Z]|$)",
+    re.IGNORECASE,
+)
+
 
 def _join_split_groups(segments: list[TextSegment]) -> list[TextSegment]:
     """Merge lines where a parenthesised size group was split by a PDF line break.
 
-    Two conditions trigger a merge with the next line:
+    Three conditions trigger a merge with the next line:
     - The current line has an unmatched '(' (e.g. "68 (74, 76,")
     - The current line ends with a digit and the next line starts with '(' followed
       by a digit (e.g. "CO 10" / "(10, 14, ...)"), but NOT labels like "(RS)".
+    - The current line ends with ')' and the next line starts with a unit keyword
+      (e.g. "Cast on 88 (98, 105)" / "stitches for back...").
     """
     result: list[TextSegment] = []
     i = 0
@@ -29,7 +57,13 @@ def _join_split_groups(segments: list[TextSegment]) -> list[TextSegment]:
             unmatched_open = stripped.count("(") > stripped.count(")")
             trailing_digit = stripped and stripped[-1].isdigit()
             next_starts_size = bool(re.match(r"\s*\(\s*\d", next_text))
-            if unmatched_open or (trailing_digit and next_starts_size):
+            ends_with_close = stripped.endswith(")")
+            next_starts_unit = bool(_UNIT_KEYWORD_RE.match(next_text.lstrip()))
+            if (
+                unmatched_open
+                or (trailing_digit and next_starts_size)
+                or (ends_with_close and next_starts_unit)
+            ):
                 text = stripped + " " + next_text.lstrip()
                 i += 1
             else:
