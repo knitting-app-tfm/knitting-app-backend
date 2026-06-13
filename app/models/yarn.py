@@ -21,4 +21,7 @@ class UserYarn(Base):
     grams_per_unit = Column(Float, nullable=True)
     strands = Column(Integer, nullable=False, default=1)
 
+    calculated_grams_needed = Column(Float, nullable=True)
+    calculated_skeins_needed = Column(Integer, nullable=True)
+
     pattern_yarn = relationship("PatternYarn", back_populates="user_yarn")

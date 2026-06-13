@@ -48,6 +48,34 @@ def _make_pattern(pattern_yarn_id):
     return pattern
 
 
+def _make_pattern_yarn(
+    py_id=None,
+    *,
+    grams_needed=None,
+    meters_per_unit=200.0,
+    grams_per_unit=100.0,
+    strands=1,
+    yarn_weight=YarnWeight.DK,
+    label="Main",
+):
+    py = MagicMock()
+    py.id = py_id or uuid.uuid4()
+    py.grams_needed = grams_needed
+    py.meters_per_unit = meters_per_unit
+    py.grams_per_unit = grams_per_unit
+    py.strands = strands
+    py.yarn_weight = yarn_weight
+    py.label = label
+    return py
+
+
+def _make_scaling(size_label="M", size_position=1):
+    s = MagicMock()
+    s.size_label = size_label
+    s.size_position = size_position
+    return s
+
+
 class TestUpsertYarn:
     def test_upsert_yarn_valid(
         self, service, pattern_id, pattern_yarn_id, valid_kwargs
@@ -59,6 +87,14 @@ class TestUpsertYarn:
             patch("app.services.yarn.yarn_service.scaling_repository") as mock_sr,
             patch("app.services.yarn.yarn_service.pattern_repository") as mock_pr,
             patch("app.services.yarn.yarn_service.yarn_repository") as mock_yr,
+            patch(
+                "app.services.yarn.yarn_service._calculate_factors",
+                return_value=(1.0, 1.0),
+            ),
+            patch(
+                "app.services.yarn.yarn_service.compute_yarn_calculation",
+                return_value=(None, None),
+            ),
         ):
             mock_sr.get_by_pattern_id.return_value = MagicMock()
             mock_pr.get_by_id.return_value = pattern
@@ -74,6 +110,36 @@ class TestUpsertYarn:
         assert call_kwargs["meters_per_unit"] == 200.0
         assert call_kwargs["grams_per_unit"] == 100.0
         assert call_kwargs["strands"] == 1
+
+    def test_upsert_yarn_stores_calculation(
+        self, service, pattern_id, pattern_yarn_id, valid_kwargs
+    ):
+        pattern = _make_pattern(pattern_yarn_id)
+        user_yarn = MagicMock()
+        db = MagicMock()
+
+        with (
+            patch("app.services.yarn.yarn_service.scaling_repository") as mock_sr,
+            patch("app.services.yarn.yarn_service.pattern_repository") as mock_pr,
+            patch("app.services.yarn.yarn_service.yarn_repository") as mock_yr,
+            patch(
+                "app.services.yarn.yarn_service._calculate_factors",
+                return_value=(1.0, 1.0),
+            ),
+            patch(
+                "app.services.yarn.yarn_service.compute_yarn_calculation",
+                return_value=(350.0, 2),
+            ),
+        ):
+            mock_sr.get_by_pattern_id.return_value = MagicMock()
+            mock_pr.get_by_id.return_value = pattern
+            mock_yr.upsert.return_value = user_yarn
+
+            service.upsert_yarn(db, pattern_id, pattern_yarn_id, **valid_kwargs)
+
+        assert user_yarn.calculated_grams_needed == 350.0
+        assert user_yarn.calculated_skeins_needed == 2
+        db.commit.assert_called()
 
     def test_upsert_yarn_no_scaling(
         self, service, pattern_id, pattern_yarn_id, valid_kwargs
@@ -192,6 +258,14 @@ class TestUpsertYarn:
             patch("app.services.yarn.yarn_service.scaling_repository") as mock_sr,
             patch("app.services.yarn.yarn_service.pattern_repository") as mock_pr,
             patch("app.services.yarn.yarn_service.yarn_repository") as mock_yr,
+            patch(
+                "app.services.yarn.yarn_service._calculate_factors",
+                return_value=(1.0, 1.0),
+            ),
+            patch(
+                "app.services.yarn.yarn_service.compute_yarn_calculation",
+                return_value=(None, None),
+            ),
         ):
             mock_sr.get_by_pattern_id.return_value = MagicMock()
             mock_pr.get_by_id.return_value = pattern
@@ -213,6 +287,14 @@ class TestUpsertYarn:
             patch("app.services.yarn.yarn_service.scaling_repository") as mock_sr,
             patch("app.services.yarn.yarn_service.pattern_repository") as mock_pr,
             patch("app.services.yarn.yarn_service.yarn_repository") as mock_yr,
+            patch(
+                "app.services.yarn.yarn_service._calculate_factors",
+                return_value=(1.0, 1.0),
+            ),
+            patch(
+                "app.services.yarn.yarn_service.compute_yarn_calculation",
+                return_value=(None, None),
+            ),
         ):
             mock_sr.get_by_pattern_id.return_value = MagicMock()
             mock_pr.get_by_id.return_value = pattern
@@ -246,93 +328,42 @@ class TestGetByPatternId:
         assert result == []
 
 
-# ---------------------------------------------------------------------------
-# Helpers for calculate_yarn tests
-# ---------------------------------------------------------------------------
+class TestGetCalculations:
+    def _make_user_yarn_with_calc(
+        self,
+        pattern_yarn,
+        *,
+        calculated_grams_needed=350.0,
+        calculated_skeins_needed=2,
+        yarn_weight=YarnWeight.DK,
+    ):
+        uy = MagicMock()
+        uy.pattern_yarn = pattern_yarn
+        uy.calculated_grams_needed = calculated_grams_needed
+        uy.calculated_skeins_needed = calculated_skeins_needed
+        uy.yarn_weight = yarn_weight
+        uy.label = "My yarn"
+        uy.meters_per_unit = 200.0
+        uy.grams_per_unit = 100.0
+        uy.strands = 1
+        return uy
 
-
-def _make_pattern_yarn(
-    py_id=None,
-    *,
-    grams_needed=None,
-    meters_per_unit=200.0,
-    grams_per_unit=100.0,
-    strands=1,
-    yarn_weight=YarnWeight.DK,
-    label="Main",
-):
-    py = MagicMock()
-    py.id = py_id or uuid.uuid4()
-    py.grams_needed = grams_needed
-    py.meters_per_unit = meters_per_unit
-    py.grams_per_unit = grams_per_unit
-    py.strands = strands
-    py.yarn_weight = yarn_weight
-    py.label = label
-    return py
-
-
-def _make_user_yarn(
-    pattern_yarn_id,
-    *,
-    meters_per_unit=180.0,
-    grams_per_unit=100.0,
-    strands=1,
-    yarn_weight=YarnWeight.DK,
-    label="My yarn",
-):
-    uy = MagicMock()
-    uy.pattern_yarn_id = pattern_yarn_id
-    uy.meters_per_unit = meters_per_unit
-    uy.grams_per_unit = grams_per_unit
-    uy.strands = strands
-    uy.yarn_weight = yarn_weight
-    uy.label = label
-    return uy
-
-
-def _make_scaling(size_label="M", size_position=1):
-    s = MagicMock()
-    s.size_label = size_label
-    s.size_position = size_position
-    return s
-
-
-class TestCalculateYarn:
-    def _run(self, service, pattern_id, pattern, scaling, user_yarns, factors):
-        with (
-            patch("app.services.yarn.yarn_service.pattern_repository") as mock_pr,
-            patch("app.services.yarn.yarn_service.scaling_repository") as mock_sr,
-            patch("app.services.yarn.yarn_service.yarn_repository") as mock_yr,
-            patch(
-                "app.services.yarn.yarn_service._calculate_factors",
-                return_value=factors,
-            ),
-        ):
-            mock_pr.get_by_id.return_value = pattern
-            mock_sr.get_by_pattern_id.return_value = scaling
-            mock_yr.get_by_pattern_id.return_value = user_yarns
-            return service.calculate_yarn(MagicMock(), pattern_id)
-
-    def test_calculate_yarn_basic(self, service, pattern_id):
+    def test_get_calculations_basic(self, service, pattern_id):
         py_id = uuid.uuid4()
         pattern_yarn = _make_pattern_yarn(
-            py_id,
-            grams_needed=[200.0, 350.0, 450.0],
-            meters_per_unit=200.0,
-            grams_per_unit=100.0,
-            strands=1,
+            py_id, grams_needed=[200.0, 350.0], yarn_weight=YarnWeight.DK
         )
-        pattern = MagicMock()
-        pattern.yarns = [pattern_yarn]
+        user_yarn = self._make_user_yarn_with_calc(pattern_yarn)
         scaling = _make_scaling(size_label="M", size_position=1)
-        user_yarn = _make_user_yarn(
-            py_id, meters_per_unit=200.0, grams_per_unit=100.0, strands=1
-        )
 
-        result = self._run(
-            service, pattern_id, pattern, scaling, [user_yarn], (1.0, 1.0)
-        )
+        with (
+            patch("app.services.yarn.yarn_service.scaling_repository") as mock_sr,
+            patch("app.services.yarn.yarn_service.yarn_repository") as mock_yr,
+        ):
+            mock_sr.get_by_pattern_id.return_value = scaling
+            mock_yr.get_by_pattern_id.return_value = [user_yarn]
+
+            result = service.get_calculations(MagicMock(), pattern_id)
 
         assert result["size_label"] == "M"
         entry = result["yarns"][0]
@@ -340,164 +371,64 @@ class TestCalculateYarn:
         assert entry["weight_warning"] is False
         assert entry["pattern_yarn"]["grams_needed"] == 350.0
         assert entry["result"]["grams_needed"] == 350.0
-        assert entry["result"]["skeins_needed"] == 4  # ceil(700/200) = 4
+        assert entry["result"]["skeins_needed"] == 2
 
-    def test_calculate_yarn_with_row_gauge(self, service, pattern_id):
-        py_id = uuid.uuid4()
-        pattern_yarn = _make_pattern_yarn(
-            py_id,
-            grams_needed=[200.0, 350.0],
-            meters_per_unit=200.0,
-            grams_per_unit=100.0,
-            strands=1,
-        )
-        pattern = MagicMock()
-        pattern.yarns = [pattern_yarn]
-        scaling = _make_scaling(size_position=1)
-        user_yarn = _make_user_yarn(
-            py_id, meters_per_unit=200.0, grams_per_unit=100.0, strands=1
-        )
-
-        # area_factor = 1.2 * 0.9 = 1.08
-        result = self._run(
-            service, pattern_id, pattern, scaling, [user_yarn], (1.2, 0.9)
-        )
-
-        entry = result["yarns"][0]
-        assert entry["calculated"] is True
-        # total_meters_pattern = 350/100*200 = 700; scaled = 700*1.08 = 756; grams = 756/200*100 = 378
-        assert entry["result"]["grams_needed"] == pytest.approx(378.0, abs=0.5)
-        assert entry["result"]["skeins_needed"] == 4  # ceil(756/200) = 4
-
-    def test_calculate_yarn_without_row_gauge(self, service, pattern_id):
-        py_id = uuid.uuid4()
-        pattern_yarn = _make_pattern_yarn(
-            py_id,
-            grams_needed=[200.0, 350.0],
-            meters_per_unit=200.0,
-            grams_per_unit=100.0,
-            strands=1,
-        )
-        pattern = MagicMock()
-        pattern.yarns = [pattern_yarn]
-        scaling = _make_scaling(size_position=1)
-        user_yarn = _make_user_yarn(
-            py_id, meters_per_unit=200.0, grams_per_unit=100.0, strands=1
-        )
-
-        # factor_rows is None → area_factor = 1.2 * 1.2 = 1.44
-        result = self._run(
-            service, pattern_id, pattern, scaling, [user_yarn], (1.2, None)
-        )
-
-        entry = result["yarns"][0]
-        assert entry["calculated"] is True
-        # total_meters_pattern = 700; scaled = 700*1.44 = 1008; grams = 1008/200*100 = 504
-        assert entry["result"]["grams_needed"] == pytest.approx(504.0, abs=0.5)
-        assert entry["result"]["skeins_needed"] == 6  # ceil(1008/200) = 6
-
-    def test_calculate_yarn_different_strands(self, service, pattern_id):
-        py_id = uuid.uuid4()
-        pattern_yarn = _make_pattern_yarn(
-            py_id,
-            grams_needed=[350.0],
-            meters_per_unit=200.0,
-            grams_per_unit=100.0,
-            strands=2,
-        )
-        pattern = MagicMock()
-        pattern.yarns = [pattern_yarn]
-        scaling = _make_scaling(size_position=0)
-        # user knits with 1 strand instead of 2
-        user_yarn = _make_user_yarn(
-            py_id, meters_per_unit=200.0, grams_per_unit=100.0, strands=1
-        )
-
-        result = self._run(
-            service, pattern_id, pattern, scaling, [user_yarn], (1.0, 1.0)
-        )
-
-        entry = result["yarns"][0]
-        assert entry["calculated"] is True
-        # total_meters_pattern = 350/100*200 = 700; scaled = 700; meters_per_strand = 700/2 = 350
-        # total_meters_user = 350*1 = 350; grams = 350/200*100 = 175
-        assert entry["result"]["grams_needed"] == pytest.approx(175.0, abs=0.5)
-        assert entry["result"]["skeins_needed"] == 2  # ceil(350/200) = 2
-
-    def test_calculate_yarn_weight_warning(self, service, pattern_id):
-        py_id = uuid.uuid4()
-        pattern_yarn = _make_pattern_yarn(
-            py_id, grams_needed=[350.0], yarn_weight=YarnWeight.DK
-        )
-        pattern = MagicMock()
-        pattern.yarns = [pattern_yarn]
-        scaling = _make_scaling(size_position=0)
-        user_yarn = _make_user_yarn(py_id, yarn_weight=YarnWeight.ARAN)
-
-        result = self._run(
-            service, pattern_id, pattern, scaling, [user_yarn], (1.0, 1.0)
-        )
-
-        assert result["yarns"][0]["weight_warning"] is True
-
-    def test_calculate_yarn_missing_grams_needed(self, service, pattern_id):
+    def test_get_calculations_missing_grams_needed(self, service, pattern_id):
         py_id = uuid.uuid4()
         pattern_yarn = _make_pattern_yarn(py_id, grams_needed=None)
-        pattern = MagicMock()
-        pattern.yarns = [pattern_yarn]
-        scaling = _make_scaling()
-        user_yarn = _make_user_yarn(py_id)
-
-        result = self._run(
-            service, pattern_id, pattern, scaling, [user_yarn], (1.0, 1.0)
+        user_yarn = self._make_user_yarn_with_calc(
+            pattern_yarn, calculated_grams_needed=None, calculated_skeins_needed=None
         )
+        scaling = _make_scaling()
+
+        with (
+            patch("app.services.yarn.yarn_service.scaling_repository") as mock_sr,
+            patch("app.services.yarn.yarn_service.yarn_repository") as mock_yr,
+        ):
+            mock_sr.get_by_pattern_id.return_value = scaling
+            mock_yr.get_by_pattern_id.return_value = [user_yarn]
+
+            result = service.get_calculations(MagicMock(), pattern_id)
 
         entry = result["yarns"][0]
         assert entry["calculated"] is False
         assert "does not specify" in entry["message"]
 
-    def test_calculate_yarn_no_user_yarn_for_pattern_yarn(self, service, pattern_id):
+    def test_get_calculations_weight_warning(self, service, pattern_id):
         py_id = uuid.uuid4()
-        pattern_yarn = _make_pattern_yarn(py_id, grams_needed=[350.0])
-        pattern = MagicMock()
-        pattern.yarns = [pattern_yarn]
-        scaling = _make_scaling()
-        # user_yarn belongs to a different pattern_yarn_id
-        other_user_yarn = _make_user_yarn(uuid.uuid4())
-
-        result = self._run(
-            service, pattern_id, pattern, scaling, [other_user_yarn], (1.0, 1.0)
+        pattern_yarn = _make_pattern_yarn(
+            py_id, grams_needed=[350.0], yarn_weight=YarnWeight.DK
         )
-
-        entry = result["yarns"][0]
-        assert entry["calculated"] is False
-        assert "No yarn data provided" in entry["message"]
-
-    def test_calculate_yarn_no_scaling(self, service, pattern_id):
-        pattern = MagicMock()
+        user_yarn = self._make_user_yarn_with_calc(
+            pattern_yarn, yarn_weight=YarnWeight.ARAN
+        )
+        scaling = _make_scaling(size_position=0)
 
         with (
-            patch("app.services.yarn.yarn_service.pattern_repository") as mock_pr,
-            patch("app.services.yarn.yarn_service.scaling_repository") as mock_sr,
-        ):
-            mock_pr.get_by_id.return_value = pattern
-            mock_sr.get_by_pattern_id.return_value = None
-
-            with pytest.raises(ScalingConfigNotFoundError, match="size and gauge"):
-                service.calculate_yarn(MagicMock(), pattern_id)
-
-    def test_calculate_yarn_no_user_yarns_at_all(self, service, pattern_id):
-        pattern = MagicMock()
-        scaling = _make_scaling()
-
-        with (
-            patch("app.services.yarn.yarn_service.pattern_repository") as mock_pr,
             patch("app.services.yarn.yarn_service.scaling_repository") as mock_sr,
             patch("app.services.yarn.yarn_service.yarn_repository") as mock_yr,
         ):
-            mock_pr.get_by_id.return_value = pattern
             mock_sr.get_by_pattern_id.return_value = scaling
+            mock_yr.get_by_pattern_id.return_value = [user_yarn]
+
+            result = service.get_calculations(MagicMock(), pattern_id)
+
+        assert result["yarns"][0]["weight_warning"] is True
+
+    def test_get_calculations_no_scaling(self, service, pattern_id):
+        with patch("app.services.yarn.yarn_service.scaling_repository") as mock_sr:
+            mock_sr.get_by_pattern_id.return_value = None
+
+            with pytest.raises(ScalingConfigNotFoundError, match="size and gauge"):
+                service.get_calculations(MagicMock(), pattern_id)
+
+    def test_get_calculations_no_user_yarns(self, service, pattern_id):
+        with (
+            patch("app.services.yarn.yarn_service.scaling_repository") as mock_sr,
+            patch("app.services.yarn.yarn_service.yarn_repository") as mock_yr,
+        ):
+            mock_sr.get_by_pattern_id.return_value = _make_scaling()
             mock_yr.get_by_pattern_id.return_value = []
 
             with pytest.raises(UserYarnNotFoundError, match="yarn data"):
-                service.calculate_yarn(MagicMock(), pattern_id)
+                service.get_calculations(MagicMock(), pattern_id)

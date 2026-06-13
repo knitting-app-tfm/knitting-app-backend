@@ -12,10 +12,7 @@ from app.schemas.yarn import (
     UserYarnUpsertRequest,
     YarnCalculationResponse,
 )
-from app.services.scaling.scaling_exceptions import (
-    PatternNotFoundError,
-    ScalingConfigNotFoundError,
-)
+from app.services.scaling.scaling_exceptions import ScalingConfigNotFoundError
 from app.services.yarn import (
     InvalidYarnDataError,
     PatternYarnNotFoundError,
@@ -105,9 +102,7 @@ def get_yarn_calculation(
     current_user: User = Depends(get_current_user),
 ) -> YarnCalculationResponse:
     try:
-        result = yarn_service.calculate_yarn(db, pattern_id)
-    except PatternNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        result = yarn_service.get_calculations(db, pattern_id)
     except (ScalingConfigNotFoundError, UserYarnNotFoundError) as e:
         raise HTTPException(status_code=400, detail=str(e))
     return YarnCalculationResponse.model_validate(result)

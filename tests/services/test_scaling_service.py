@@ -59,9 +59,13 @@ class TestUpsertSize:
             patch(
                 "app.services.scaling.scaling_service.scaling_repository"
             ) as mock_scaling_repo,
+            patch(
+                "app.services.scaling.scaling_service.yarn_repository"
+            ) as mock_yarn_repo,
         ):
             mock_pattern_repo.get_by_id.return_value = pattern_with_sizes
             mock_scaling_repo.upsert.return_value = mock_scaling
+            mock_yarn_repo.get_by_pattern_id.return_value = []
 
             result = service.upsert_size(
                 db,
@@ -72,6 +76,51 @@ class TestUpsertSize:
             )
 
         assert result is mock_scaling
+
+    def test_upsert_size_recalculates_existing_user_yarns(
+        self, service, pattern_with_sizes, valid_gauge
+    ):
+        db = MagicMock()
+        mock_scaling = MagicMock()
+        mock_scaling.size_position = 2
+
+        user_yarn = MagicMock()
+        user_yarn.pattern_yarn = MagicMock()
+
+        with (
+            patch(
+                "app.services.scaling.scaling_service.pattern_repository"
+            ) as mock_pattern_repo,
+            patch(
+                "app.services.scaling.scaling_service.scaling_repository"
+            ) as mock_scaling_repo,
+            patch(
+                "app.services.scaling.scaling_service.yarn_repository"
+            ) as mock_yarn_repo,
+            patch(
+                "app.services.scaling.scaling_service._calculate_factors",
+                return_value=(1.0, 1.0),
+            ),
+            patch(
+                "app.services.scaling.scaling_service.compute_yarn_calculation",
+                return_value=(350.0, 2),
+            ),
+        ):
+            mock_pattern_repo.get_by_id.return_value = pattern_with_sizes
+            mock_scaling_repo.upsert.return_value = mock_scaling
+            mock_yarn_repo.get_by_pattern_id.return_value = [user_yarn]
+
+            service.upsert_size(
+                db,
+                pattern_with_sizes.id,
+                size_label="M",
+                size_position=2,
+                **valid_gauge,
+            )
+
+        assert user_yarn.calculated_grams_needed == 350.0
+        assert user_yarn.calculated_skeins_needed == 2
+        db.commit.assert_called()
 
     def test_upsert_size_invalid_label(self, service, pattern_with_sizes, valid_gauge):
         db = MagicMock()
@@ -135,9 +184,13 @@ class TestUpsertSize:
             patch(
                 "app.services.scaling.scaling_service.scaling_repository"
             ) as mock_scaling_repo,
+            patch(
+                "app.services.scaling.scaling_service.yarn_repository"
+            ) as mock_yarn_repo,
         ):
             mock_pattern_repo.get_by_id.return_value = one_size_pattern
             mock_scaling_repo.upsert.return_value = mock_scaling
+            mock_yarn_repo.get_by_pattern_id.return_value = []
 
             result = service.upsert_size(
                 db,
@@ -165,9 +218,13 @@ class TestUpsertSize:
             patch(
                 "app.services.scaling.scaling_service.scaling_repository"
             ) as mock_scaling_repo,
+            patch(
+                "app.services.scaling.scaling_service.yarn_repository"
+            ) as mock_yarn_repo,
         ):
             mock_pattern_repo.get_by_id.return_value = pattern
             mock_scaling_repo.upsert.return_value = mock_scaling
+            mock_yarn_repo.get_by_pattern_id.return_value = []
 
             service.upsert_size(
                 db, pattern.id, size_label="S", size_position=1, **valid_gauge
@@ -191,9 +248,13 @@ class TestUpsertGauge:
             patch(
                 "app.services.scaling.scaling_service.scaling_repository"
             ) as mock_scaling_repo,
+            patch(
+                "app.services.scaling.scaling_service.yarn_repository"
+            ) as mock_yarn_repo,
         ):
             mock_pattern_repo.get_by_id.return_value = pattern_with_sizes
             mock_scaling_repo.upsert.return_value = mock_scaling
+            mock_yarn_repo.get_by_pattern_id.return_value = []
 
             result = service.upsert_size(
                 db,

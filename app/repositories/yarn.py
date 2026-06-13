@@ -16,6 +16,8 @@ class YarnRepository:
         meters_per_unit: float,
         grams_per_unit: float,
         strands: int,
+        calculated_grams_needed: float | None = None,
+        calculated_skeins_needed: int | None = None,
     ) -> UserYarn:
         yarn = (
             db.query(UserYarn)
@@ -30,6 +32,8 @@ class YarnRepository:
                 meters_per_unit=meters_per_unit,
                 grams_per_unit=grams_per_unit,
                 strands=strands,
+                calculated_grams_needed=calculated_grams_needed,
+                calculated_skeins_needed=calculated_skeins_needed,
             )
             db.add(yarn)
         else:
@@ -38,6 +42,8 @@ class YarnRepository:
             yarn.meters_per_unit = meters_per_unit
             yarn.grams_per_unit = grams_per_unit
             yarn.strands = strands
+            yarn.calculated_grams_needed = calculated_grams_needed
+            yarn.calculated_skeins_needed = calculated_skeins_needed
         db.commit()
         db.refresh(yarn)
         return yarn
