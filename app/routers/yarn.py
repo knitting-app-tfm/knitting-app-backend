@@ -7,11 +7,19 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 from app.schemas.pattern import ErrorResponse
-from app.schemas.yarn import UserYarnResponse, UserYarnUpsertRequest
-from app.services.scaling.scaling_exceptions import ScalingConfigNotFoundError
+from app.schemas.yarn import (
+    UserYarnResponse,
+    UserYarnUpsertRequest,
+    YarnCalculationResponse,
+)
+from app.services.scaling.scaling_exceptions import (
+    PatternNotFoundError,
+    ScalingConfigNotFoundError,
+)
 from app.services.yarn import (
     InvalidYarnDataError,
     PatternYarnNotFoundError,
+    UserYarnNotFoundError,
     yarn_service,
 )
 
@@ -73,3 +81,33 @@ def list_yarns(
 ) -> list[UserYarnResponse]:
     yarns = yarn_service.get_by_pattern_id(db, pattern_id)
     return [UserYarnResponse.model_validate(y) for y in yarns]
+
+
+@router.get(
+    "/{pattern_id}/yarn-calculation",
+    response_model=YarnCalculationResponse,
+    responses={
+        **_404,
+        400: {
+            "model": ErrorResponse,
+            "description": "No scaling config or no user yarn data",
+        },
+    },
+    summary="Calculate yarn needed for a pattern",
+    description=(
+        "Returns per-yarn calculations scaled to the user's gauge. "
+        "Requires a size/gauge selection and at least one user yarn entry."
+    ),
+)
+def get_yarn_calculation(
+    pattern_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> YarnCalculationResponse:
+    try:
+        result = yarn_service.calculate_yarn(db, pattern_id)
+    except PatternNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except (ScalingConfigNotFoundError, UserYarnNotFoundError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return YarnCalculationResponse.model_validate(result)

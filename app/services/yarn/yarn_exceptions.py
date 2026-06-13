@@ -4,3 +4,7 @@ class PatternYarnNotFoundError(LookupError):
 
 class InvalidYarnDataError(ValueError):
     pass
+
+
+class UserYarnNotFoundError(ValueError):
+    pass
