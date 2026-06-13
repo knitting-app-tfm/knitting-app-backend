@@ -1,9 +1,10 @@
 import json
 import uuid
-from unittest.mock import MagicMock, patch
 
 import pytest
+from unittest.mock import MagicMock, patch
 
+from app.core.config import settings
 from app.models.pattern import (
     CraftType,
     GaugeUnit,
@@ -11,6 +12,7 @@ from app.models.pattern import (
     PatternStatus,
     YarnWeight,
 )
+from app.schemas.pattern import PatternYarnPrefillItem, PatternYarnResponse
 from app.services.pattern import (
     EmptyTextError,
     EmptyTitleError,
@@ -19,7 +21,6 @@ from app.services.pattern import (
     PatternService,
     _MAX_FILE_SIZE,
 )
-from app.core.config import settings
 from app.services.pattern import pattern_llm, pattern_parser
 
 _PDF_BYTES = b"%PDF-1.4 test"
@@ -753,3 +754,79 @@ class TestConfirmGramsNeededValidation:
         ) as mock_repo:
             mock_repo.update.return_value = MagicMock()
             service.confirm(MagicMock(), pattern, **confirm_kwargs)  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# PatternYarnResponse / PatternYarnPrefillItem — filter_null_elements validator
+# ---------------------------------------------------------------------------
+
+
+class TestFilterNullElements:
+    def _response(self, grams_needed):
+        return PatternYarnResponse(
+            id=uuid.uuid4(),
+            pattern_id=uuid.uuid4(),
+            label=None,
+            yarn_weight=None,
+            meters_per_unit=None,
+            grams_per_unit=None,
+            grams_needed=grams_needed,
+            strands=1,
+        )
+
+    def _prefill(self, grams_needed):
+        return PatternYarnPrefillItem(grams_needed=grams_needed)
+
+    def test_response_filters_none_from_list(self):
+        item = self._response([100.0, None, 200.0])
+        assert item.grams_needed == [100.0, 200.0]
+
+    def test_response_all_none_becomes_none(self):
+        item = self._response([None, None])
+        assert item.grams_needed is None
+
+    def test_response_none_input_stays_none(self):
+        item = self._response(None)
+        assert item.grams_needed is None
+
+    def test_prefill_filters_none_from_list(self):
+        item = self._prefill([300.0, None, None])
+        assert item.grams_needed == [300.0]
+
+    def test_prefill_all_none_becomes_none(self):
+        item = self._prefill([None])
+        assert item.grams_needed is None
+
+    def test_prefill_none_input_stays_none(self):
+        item = self._prefill(None)
+        assert item.grams_needed is None
+
+
+class TestNormalizeSizes:
+    def test_none_sizes_become_empty_list(self):
+        import datetime
+
+        from app.models.pattern import PatternSource, PatternStatus
+        from app.schemas.pattern import PatternResponse
+
+        p = PatternResponse(
+            id=uuid.uuid4(),
+            user_id=None,
+            title=None,
+            craft=None,
+            status=PatternStatus.IMPORTED,
+            source=PatternSource.TEXT,
+            cover_image_path=None,
+            original_file_path="x.txt",
+            parsed_json_path=None,
+            gauge_stitches=None,
+            gauge_rows=None,
+            gauge_size=None,
+            gauge_unit=None,
+            needle_size=None,
+            sizes=None,
+            created_at=datetime.datetime.now(),
+            updated_at=None,
+            yarns=[],
+        )
+        assert p.sizes == []

@@ -85,3 +85,4 @@ class PatternYarn(Base):
     strands = Column(Integer, nullable=False, default=1)
 
     pattern = relationship("Pattern", back_populates="yarns")
+    user_yarn = relationship("UserYarn", back_populates="pattern_yarn", uselist=False)

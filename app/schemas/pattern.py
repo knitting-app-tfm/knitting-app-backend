@@ -29,6 +29,14 @@ class PatternYarnResponse(BaseModel):
     grams_needed: list[float] | None
     strands: int
 
+    @field_validator("grams_needed", mode="before")
+    @classmethod
+    def filter_null_elements(cls, v: list | None) -> list | None:
+        if isinstance(v, list):
+            filtered = [x for x in v if x is not None]
+            return filtered if filtered else None
+        return v
+
 
 class PatternYarnRequest(BaseModel):
     label: str | None = None
@@ -50,6 +58,14 @@ class PatternYarnPrefillItem(BaseModel):
     grams_per_unit: float | None = None
     grams_needed: list[float] | None = None
     strands: int = 1
+
+    @field_validator("grams_needed", mode="before")
+    @classmethod
+    def filter_null_elements(cls, v: list | None) -> list | None:
+        if isinstance(v, list):
+            filtered = [x for x in v if x is not None]
+            return filtered if filtered else None
+        return v
 
 
 class PatternResponse(BaseModel):

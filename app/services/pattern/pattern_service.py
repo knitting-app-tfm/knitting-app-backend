@@ -288,10 +288,12 @@ class PatternService:
             elif isinstance(gn, list):
                 parsed = []
                 for item in gn:
+                    if item is None:
+                        continue
                     try:
                         parsed.append(float(item))
                     except (ValueError, TypeError):
-                        parsed.append(None)
+                        continue
                 n["grams_needed"] = parsed if parsed else None
             else:
                 try:
