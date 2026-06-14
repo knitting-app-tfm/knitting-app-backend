@@ -1,9 +1,10 @@
 import json
 import uuid
-from unittest.mock import MagicMock, patch
 
 import pytest
+from unittest.mock import MagicMock, patch
 
+from app.core.config import settings
 from app.models.pattern import (
     CraftType,
     GaugeUnit,
@@ -11,6 +12,7 @@ from app.models.pattern import (
     PatternStatus,
     YarnWeight,
 )
+from app.schemas.pattern import PatternYarnPrefillItem, PatternYarnResponse
 from app.services.pattern import (
     EmptyTextError,
     EmptyTitleError,
@@ -19,7 +21,6 @@ from app.services.pattern import (
     PatternService,
     _MAX_FILE_SIZE,
 )
-from app.core.config import settings
 from app.services.pattern import pattern_llm, pattern_parser
 
 _PDF_BYTES = b"%PDF-1.4 test"
@@ -622,11 +623,210 @@ class TestNormalizeYarns:
                     "yarn_weight": "DK",
                     "meters_per_unit": "200",
                     "grams_per_unit": "100.5",
-                    "grams_needed": 300,
+                    "grams_needed": [300, 400],
                 }
             ]
         )
 
         assert result[0]["meters_per_unit"] == 200.0
         assert result[0]["grams_per_unit"] == 100.5
-        assert result[0]["grams_needed"] == 300.0
+        assert result[0]["grams_needed"] == [300.0, 400.0]
+
+    def test_grams_needed_scalar_wrapped_in_list(self, service):
+        result = service._normalize_yarns([{"grams_needed": 250}])
+
+        assert result[0]["grams_needed"] == [250.0]
+
+    def test_grams_needed_none_stays_none(self, service):
+        result = service._normalize_yarns([{"grams_needed": None}])
+
+        assert result[0]["grams_needed"] is None
+
+    def test_grams_needed_list_items_coerced_to_float(self, service):
+        result = service._normalize_yarns([{"grams_needed": ["100", "200.5"]}])
+
+        assert result[0]["grams_needed"] == [100.0, 200.5]
+
+
+# ---------------------------------------------------------------------------
+# pattern_llm — normalize grams_needed
+# ---------------------------------------------------------------------------
+
+
+class TestNormalizeLlmGramsNeeded:
+    def test_scalar_grams_needed_is_wrapped_in_list(self):
+        raw = {"yarns": [{"grams_needed": 300.0, "strands": 1}]}
+        result = pattern_llm.normalize(raw)
+
+        assert result["yarns"][0]["grams_needed"] == [300.0]
+
+    def test_array_grams_needed_is_unchanged(self):
+        raw = {"yarns": [{"grams_needed": [100.0, 200.0], "strands": 1}]}
+        result = pattern_llm.normalize(raw)
+
+        assert result["yarns"][0]["grams_needed"] == [100.0, 200.0]
+
+    def test_null_grams_needed_stays_null(self):
+        raw = {"yarns": [{"grams_needed": None, "strands": 1}]}
+        result = pattern_llm.normalize(raw)
+
+        assert result["yarns"][0]["grams_needed"] is None
+
+    def test_missing_grams_needed_key_is_not_added(self):
+        raw = {"yarns": [{"strands": 1}]}
+        result = pattern_llm.normalize(raw)
+
+        assert "grams_needed" not in result["yarns"][0]
+
+
+# ---------------------------------------------------------------------------
+# confirm — grams_needed length validation
+# ---------------------------------------------------------------------------
+
+
+class TestConfirmGramsNeededValidation:
+    def test_raises_when_array_length_does_not_match_sizes(
+        self, service, confirm_kwargs
+    ):
+        confirm_kwargs["sizes"] = ["S", "M", "L"]
+        confirm_kwargs["yarns_data"] = [{"grams_needed": [100.0, 200.0]}]  # 2 != 3
+
+        with patch("app.services.pattern.pattern_service.pattern_repository"):
+            with pytest.raises(
+                ValueError, match="grams_needed must have one value per size"
+            ):
+                service.confirm(MagicMock(), MagicMock(), **confirm_kwargs)
+
+    def test_passes_when_array_length_matches_sizes(self, service, confirm_kwargs):
+        confirm_kwargs["sizes"] = ["S", "M"]
+        confirm_kwargs["yarns_data"] = [{"grams_needed": [100.0, 200.0]}]
+        pattern = MagicMock()
+        pattern.cover_image_path = None
+
+        with patch(
+            "app.services.pattern.pattern_service.pattern_repository"
+        ) as mock_repo:
+            mock_repo.update.return_value = MagicMock()
+            service.confirm(MagicMock(), pattern, **confirm_kwargs)  # must not raise
+
+    def test_null_grams_needed_always_allowed_with_sizes(self, service, confirm_kwargs):
+        confirm_kwargs["sizes"] = ["S", "M", "L"]
+        confirm_kwargs["yarns_data"] = [{"grams_needed": None}]
+        pattern = MagicMock()
+        pattern.cover_image_path = None
+
+        with patch(
+            "app.services.pattern.pattern_service.pattern_repository"
+        ) as mock_repo:
+            mock_repo.update.return_value = MagicMock()
+            service.confirm(MagicMock(), pattern, **confirm_kwargs)  # must not raise
+
+    def test_single_element_allowed_when_no_sizes(self, service, confirm_kwargs):
+        confirm_kwargs["sizes"] = []
+        confirm_kwargs["yarns_data"] = [{"grams_needed": [150.0]}]
+        pattern = MagicMock()
+        pattern.cover_image_path = None
+
+        with patch(
+            "app.services.pattern.pattern_service.pattern_repository"
+        ) as mock_repo:
+            mock_repo.update.return_value = MagicMock()
+            service.confirm(MagicMock(), pattern, **confirm_kwargs)  # must not raise
+
+    def test_raises_when_multiple_elements_and_no_sizes(self, service, confirm_kwargs):
+        confirm_kwargs["sizes"] = []
+        confirm_kwargs["yarns_data"] = [{"grams_needed": [100.0, 200.0]}]
+
+        with patch("app.services.pattern.pattern_service.pattern_repository"):
+            with pytest.raises(
+                ValueError, match="grams_needed must have one value per size"
+            ):
+                service.confirm(MagicMock(), MagicMock(), **confirm_kwargs)
+
+    def test_null_grams_needed_allowed_when_no_sizes(self, service, confirm_kwargs):
+        confirm_kwargs["sizes"] = []
+        confirm_kwargs["yarns_data"] = [{"grams_needed": None}]
+        pattern = MagicMock()
+        pattern.cover_image_path = None
+
+        with patch(
+            "app.services.pattern.pattern_service.pattern_repository"
+        ) as mock_repo:
+            mock_repo.update.return_value = MagicMock()
+            service.confirm(MagicMock(), pattern, **confirm_kwargs)  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# PatternYarnResponse / PatternYarnPrefillItem — filter_null_elements validator
+# ---------------------------------------------------------------------------
+
+
+class TestFilterNullElements:
+    def _response(self, grams_needed):
+        return PatternYarnResponse(
+            id=uuid.uuid4(),
+            pattern_id=uuid.uuid4(),
+            label=None,
+            yarn_weight=None,
+            meters_per_unit=None,
+            grams_per_unit=None,
+            grams_needed=grams_needed,
+            strands=1,
+        )
+
+    def _prefill(self, grams_needed):
+        return PatternYarnPrefillItem(grams_needed=grams_needed)
+
+    def test_response_filters_none_from_list(self):
+        item = self._response([100.0, None, 200.0])
+        assert item.grams_needed == [100.0, 200.0]
+
+    def test_response_all_none_becomes_none(self):
+        item = self._response([None, None])
+        assert item.grams_needed is None
+
+    def test_response_none_input_stays_none(self):
+        item = self._response(None)
+        assert item.grams_needed is None
+
+    def test_prefill_filters_none_from_list(self):
+        item = self._prefill([300.0, None, None])
+        assert item.grams_needed == [300.0]
+
+    def test_prefill_all_none_becomes_none(self):
+        item = self._prefill([None])
+        assert item.grams_needed is None
+
+    def test_prefill_none_input_stays_none(self):
+        item = self._prefill(None)
+        assert item.grams_needed is None
+
+
+class TestNormalizeSizes:
+    def test_none_sizes_become_empty_list(self):
+        import datetime
+
+        from app.models.pattern import PatternSource, PatternStatus
+        from app.schemas.pattern import PatternResponse
+
+        p = PatternResponse(
+            id=uuid.uuid4(),
+            user_id=None,
+            title=None,
+            craft=None,
+            status=PatternStatus.IMPORTED,
+            source=PatternSource.TEXT,
+            cover_image_path=None,
+            original_file_path="x.txt",
+            parsed_json_path=None,
+            gauge_stitches=None,
+            gauge_rows=None,
+            gauge_size=None,
+            gauge_unit=None,
+            needle_size=None,
+            sizes=None,
+            created_at=datetime.datetime.now(),
+            updated_at=None,
+            yarns=[],
+        )
+        assert p.sizes == []

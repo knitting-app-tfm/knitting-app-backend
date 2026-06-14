@@ -6,7 +6,10 @@ from app.models.pattern import GaugeUnit, PatternStatus
 from app.models.scaling import UserScaling
 from app.repositories.pattern import pattern_repository
 from app.repositories.scaling import scaling_repository
+from app.repositories.yarn import yarn_repository
 from app.services.pattern import pattern_storage
+from app.services.scaling.gauge_factors import _calculate_factors
+from app.services.scaling.yarn_calculation import compute_yarn_calculation
 from app.services.scaling.scaling_exceptions import (
     InvalidGaugeError,
     InvalidSizeLabelError,
@@ -19,14 +22,6 @@ from app.services.scaling.scaling_exceptions import (
 _STITCH_UNITS: frozenset[str] = frozenset({"stitches", "stitch", "sts", "st"})
 _ROW_UNITS: frozenset[str] = frozenset({"rows", "row", "rounds", "round"})
 _SCALABLE_UNITS: frozenset[str] = _STITCH_UNITS | _ROW_UNITS
-
-_INCH_TO_CM: float = 2.54
-
-
-def _gauge_density(stitches: float, size: float, unit: GaugeUnit) -> float:
-    """Return stitches (or rows) per cm."""
-    size_cm = size * _INCH_TO_CM if unit == GaugeUnit.INCH else size
-    return stitches / size_cm
 
 
 def _scale_token(
@@ -155,7 +150,7 @@ class ScalingService:
         except ValueError:
             raise InvalidGaugeError(f"Invalid gauge unit: '{gauge_unit}'")
 
-        return scaling_repository.upsert(
+        user_scaling = scaling_repository.upsert(
             db,
             pattern_id,
             size_label,
@@ -166,6 +161,23 @@ class ScalingService:
             gauge_unit_enum,
             needle_size,
         )
+
+        user_yarns = yarn_repository.get_by_pattern_id(db, pattern_id)
+        if user_yarns:
+            factor_stitches, factor_rows = _calculate_factors(pattern, user_scaling)
+            for user_yarn in user_yarns:
+                grams, skeins = compute_yarn_calculation(
+                    user_yarn.pattern_yarn,
+                    user_yarn,
+                    factor_stitches,
+                    factor_rows,
+                    user_scaling.size_position,
+                )
+                user_yarn.calculated_grams_needed = grams
+                user_yarn.calculated_skeins_needed = skeins
+            db.commit()
+
+        return user_scaling
 
     def get_by_pattern_id(self, db: Session, pattern_id: UUID) -> UserScaling | None:
         return scaling_repository.get_by_pattern_id(db, pattern_id)
@@ -188,27 +200,7 @@ class ScalingService:
 
         lines = pattern_storage.read_tokens_file(f"storage/tokens/{pattern_id}.json")
 
-        pattern_stitch_density = _gauge_density(
-            pattern.gauge_stitches, pattern.gauge_size, pattern.gauge_unit
-        )
-        user_stitch_density = _gauge_density(
-            user_scaling.gauge_stitches,
-            user_scaling.gauge_size,
-            user_scaling.gauge_unit,
-        )
-        factor_stitches = pattern_stitch_density / user_stitch_density
-
-        factor_rows = None
-        if user_scaling.gauge_rows and pattern.gauge_rows:
-            pattern_row_density = _gauge_density(
-                pattern.gauge_rows, pattern.gauge_size, pattern.gauge_unit
-            )
-            user_row_density = _gauge_density(
-                user_scaling.gauge_rows,
-                user_scaling.gauge_size,
-                user_scaling.gauge_unit,
-            )
-            factor_rows = pattern_row_density / user_row_density
+        factor_stitches, factor_rows = _calculate_factors(pattern, user_scaling)
 
         num_sizes = len(pattern.sizes) if pattern.sizes else 0
         size_position = user_scaling.size_position

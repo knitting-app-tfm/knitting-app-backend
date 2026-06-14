@@ -150,6 +150,18 @@ class PatternService:
         if not title or not title.strip():
             raise EmptyTitleError("Title cannot be empty")
 
+        num_sizes = len(sizes) if sizes else 0
+        for yarn in yarns_data:
+            gn = yarn.get("grams_needed")
+            if gn is None:
+                continue
+            if not isinstance(gn, list):
+                gn = [gn]
+            if num_sizes > 0 and len(gn) != num_sizes:
+                raise ValueError("grams_needed must have one value per size")
+            if num_sizes == 0 and len(gn) > 1:
+                raise ValueError("grams_needed must have one value per size")
+
         cover_image_path = pattern.cover_image_path
         if cover_bytes is not None:
             cover_image_path = pattern_storage.save_file(
@@ -261,7 +273,7 @@ class PatternService:
                 n["yarn_weight"] = YarnWeight(n.get("yarn_weight"))
             except (ValueError, KeyError, TypeError):
                 n["yarn_weight"] = None
-            for float_field in ("meters_per_unit", "grams_per_unit", "grams_needed"):
+            for float_field in ("meters_per_unit", "grams_per_unit"):
                 v = n.get(float_field)
                 if v == "" or v is None:
                     n[float_field] = None
@@ -270,6 +282,24 @@ class PatternService:
                         n[float_field] = float(v)
                     except (ValueError, TypeError):
                         n[float_field] = None
+            gn = n.get("grams_needed")
+            if gn == "" or gn is None:
+                n["grams_needed"] = None
+            elif isinstance(gn, list):
+                parsed = []
+                for item in gn:
+                    if item is None:
+                        continue
+                    try:
+                        parsed.append(float(item))
+                    except (ValueError, TypeError):
+                        continue
+                n["grams_needed"] = parsed if parsed else None
+            else:
+                try:
+                    n["grams_needed"] = [float(gn)]
+                except (ValueError, TypeError):
+                    n["grams_needed"] = None
             n.setdefault("strands", 1)
             result.append(n)
         return result
