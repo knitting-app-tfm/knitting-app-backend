@@ -165,7 +165,9 @@ class TestImportFromPdf:
 
     def test_returns_415_on_invalid_file_type(self):
         with patch("app.routers.pattern.pattern_service") as mock_svc:
-            mock_svc.import_from_pdf.side_effect = InvalidFileTypeError("Only PDF allowed")
+            mock_svc.import_from_pdf.side_effect = InvalidFileTypeError(
+                "Only PDF allowed"
+            )
             response = client.post(
                 "/patterns/import/pdf",
                 files={"file": ("test.txt", b"not a pdf", "text/plain")},
@@ -210,7 +212,9 @@ class TestImportFromText:
         # the route handler is actually reached (empty body is rejected by FastAPI
         # before the handler runs).
         with patch("app.routers.pattern.pattern_service") as mock_svc:
-            mock_svc.import_from_text.side_effect = EmptyTextError("Text cannot be empty")
+            mock_svc.import_from_text.side_effect = EmptyTextError(
+                "Text cannot be empty"
+            )
             response = client.post(
                 "/patterns/import/text",
                 content="   ",
@@ -228,7 +232,12 @@ class TestConfirmPattern:
             mock_svc.confirm.return_value = pattern
             response = client.put(
                 f"/patterns/{pattern_id}/confirm",
-                data={"title": "My Pattern", "craft": "KNITTING", "sizes": "[]", "yarns": "[]"},
+                data={
+                    "title": "My Pattern",
+                    "craft": "KNITTING",
+                    "sizes": "[]",
+                    "yarns": "[]",
+                },
             )
         assert response.status_code == 200
 
@@ -262,7 +271,9 @@ class TestConfirmPattern:
         pattern_id = uuid.uuid4()
         with patch("app.routers.pattern.pattern_service") as mock_svc:
             mock_svc.get_by_id.return_value = pattern
-            mock_svc.confirm.side_effect = ValueError("grams_needed must have one value per size")
+            mock_svc.confirm.side_effect = ValueError(
+                "grams_needed must have one value per size"
+            )
             response = client.put(
                 f"/patterns/{pattern_id}/confirm",
                 data={"title": "My Pattern", "craft": "KNITTING"},

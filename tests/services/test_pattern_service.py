@@ -603,7 +603,13 @@ class TestNormalizeYarns:
     def test_non_numeric_float_field_becomes_none(self, service):
         # Covers the except (ValueError, TypeError) branch on lines 283-284
         result = service._normalize_yarns(
-            [{"yarn_weight": "DK", "meters_per_unit": "not-a-number", "grams_per_unit": "abc"}]
+            [
+                {
+                    "yarn_weight": "DK",
+                    "meters_per_unit": "not-a-number",
+                    "grams_per_unit": "abc",
+                }
+            ]
         )
 
         assert result[0]["meters_per_unit"] is None

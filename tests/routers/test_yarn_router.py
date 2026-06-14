@@ -8,7 +8,11 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.main import app
 from app.services.scaling.scaling_exceptions import ScalingConfigNotFoundError
-from app.services.yarn import InvalidYarnDataError, PatternYarnNotFoundError, UserYarnNotFoundError
+from app.services.yarn import (
+    InvalidYarnDataError,
+    PatternYarnNotFoundError,
+    UserYarnNotFoundError,
+)
 
 
 def _mock_db():
@@ -96,7 +100,9 @@ class TestUpsertYarn:
         pattern_id = uuid.uuid4()
         yarn_id = uuid.uuid4()
         with patch("app.routers.yarn.yarn_service") as mock_svc:
-            mock_svc.upsert_yarn.side_effect = PatternYarnNotFoundError("Yarn not found")
+            mock_svc.upsert_yarn.side_effect = PatternYarnNotFoundError(
+                "Yarn not found"
+            )
             response = client.put(
                 f"/patterns/{pattern_id}/yarns/{yarn_id}", json=_YARN_BODY
             )
@@ -150,13 +156,17 @@ class TestGetYarnCalculation:
     def test_returns_400_when_no_scaling_config(self):
         pattern_id = uuid.uuid4()
         with patch("app.routers.yarn.yarn_service") as mock_svc:
-            mock_svc.get_calculations.side_effect = ScalingConfigNotFoundError("No scaling")
+            mock_svc.get_calculations.side_effect = ScalingConfigNotFoundError(
+                "No scaling"
+            )
             response = client.get(f"/patterns/{pattern_id}/yarn-calculation")
         assert response.status_code == 400
 
     def test_returns_400_when_no_user_yarn_data(self):
         pattern_id = uuid.uuid4()
         with patch("app.routers.yarn.yarn_service") as mock_svc:
-            mock_svc.get_calculations.side_effect = UserYarnNotFoundError("No yarn data")
+            mock_svc.get_calculations.side_effect = UserYarnNotFoundError(
+                "No yarn data"
+            )
             response = client.get(f"/patterns/{pattern_id}/yarn-calculation")
         assert response.status_code == 400

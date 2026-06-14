@@ -1,7 +1,6 @@
 import uuid
 from unittest.mock import MagicMock, patch
 
-import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
@@ -31,9 +30,7 @@ class TestNoAuthHeader:
 class TestMalformedHeader:
     def test_returns_401_when_scheme_is_not_bearer(self):
         # HTTPBearer rejects non-Bearer schemes with 401
-        response = _client.get(
-            "/protected", headers={"Authorization": "Token abc123"}
-        )
+        response = _client.get("/protected", headers={"Authorization": "Token abc123"})
         assert response.status_code == 401
 
     def test_returns_401_when_no_bearer_prefix(self):
@@ -94,7 +91,9 @@ class TestValidToken:
 
 class TestVerifyFirebaseToken:
     def test_delegates_to_firebase_auth_verify_id_token(self):
-        with patch("app.core.firebase.auth.verify_id_token", return_value={"uid": "abc"}) as mock_verify:
+        with patch(
+            "app.core.firebase.auth.verify_id_token", return_value={"uid": "abc"}
+        ) as mock_verify:
             result = verify_firebase_token("my-token")
         mock_verify.assert_called_once_with("my-token")
         assert result == {"uid": "abc"}

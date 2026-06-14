@@ -50,7 +50,11 @@ class TestFirebaseRegister:
             mock_svc.register_with_credentials.return_value = user
             response = client.post(
                 "/auth/firebase/register",
-                json={"email": "new@test.com", "password": "secret123", "username": "newuser"},
+                json={
+                    "email": "new@test.com",
+                    "password": "secret123",
+                    "username": "newuser",
+                },
             )
         assert response.status_code == 201
         assert response.json()["username"] == "testuser"
@@ -62,7 +66,11 @@ class TestFirebaseRegister:
             )
             response = client.post(
                 "/auth/firebase/register",
-                json={"email": "existing@test.com", "password": "secret123", "username": "u"},
+                json={
+                    "email": "existing@test.com",
+                    "password": "secret123",
+                    "username": "u",
+                },
             )
         assert response.status_code == 409
 
@@ -73,7 +81,11 @@ class TestFirebaseRegister:
             )
             response = client.post(
                 "/auth/firebase/register",
-                json={"email": "new@test.com", "password": "secret123", "username": "taken"},
+                json={
+                    "email": "new@test.com",
+                    "password": "secret123",
+                    "username": "taken",
+                },
             )
         assert response.status_code == 409
 
@@ -97,12 +109,18 @@ class TestGetMe:
 class TestFirebaseRegisterRequestSchema:
     def test_raises_validation_error_for_invalid_email(self):
         with pytest.raises(ValidationError) as exc_info:
-            FirebaseRegisterRequest(email="not-an-email", password="secret123", username="user")
+            FirebaseRegisterRequest(
+                email="not-an-email", password="secret123", username="user"
+            )
         errors = exc_info.value.errors()
-        assert any("email" in str(e).lower() or "invalid" in str(e).lower() for e in errors)
+        assert any(
+            "email" in str(e).lower() or "invalid" in str(e).lower() for e in errors
+        )
 
     def test_accepts_valid_email(self):
-        req = FirebaseRegisterRequest(email="valid@example.com", password="secret123", username="user")
+        req = FirebaseRegisterRequest(
+            email="valid@example.com", password="secret123", username="user"
+        )
         assert req.email == "valid@example.com"
 
 
@@ -120,7 +138,9 @@ class TestRegister:
 
     def test_returns_409_on_duplicate_email(self):
         with patch("app.routers.auth.user_service") as mock_svc:
-            mock_svc.register.side_effect = UserAlreadyExistsError("Email already registered")
+            mock_svc.register.side_effect = UserAlreadyExistsError(
+                "Email already registered"
+            )
             response = client.post(
                 "/auth/register",
                 json={"firebase_token": "token123", "username": "newuser"},

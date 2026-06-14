@@ -89,14 +89,18 @@ class TestUpsertScaling:
     def test_returns_400_on_invalid_size_label(self):
         pattern_id = uuid.uuid4()
         with patch("app.routers.scaling.scaling_service") as mock_svc:
-            mock_svc.upsert_size.side_effect = InvalidSizeLabelError("Invalid size label")
+            mock_svc.upsert_size.side_effect = InvalidSizeLabelError(
+                "Invalid size label"
+            )
             response = client.put(f"/patterns/{pattern_id}/scaling", json=_SCALING_BODY)
         assert response.status_code == 400
 
     def test_returns_400_on_invalid_size_position(self):
         pattern_id = uuid.uuid4()
         with patch("app.routers.scaling.scaling_service") as mock_svc:
-            mock_svc.upsert_size.side_effect = InvalidSizePositionError("Invalid position")
+            mock_svc.upsert_size.side_effect = InvalidSizePositionError(
+                "Invalid position"
+            )
             response = client.put(f"/patterns/{pattern_id}/scaling", json=_SCALING_BODY)
         assert response.status_code == 400
 
@@ -158,13 +162,17 @@ class TestGetScaledPattern:
     def test_returns_400_when_not_tokenized(self):
         pattern_id = uuid.uuid4()
         with patch("app.routers.scaling.scaling_service") as mock_svc:
-            mock_svc.scale_pattern.side_effect = PatternNotTokenizedError("Not tokenized")
+            mock_svc.scale_pattern.side_effect = PatternNotTokenizedError(
+                "Not tokenized"
+            )
             response = client.get(f"/patterns/{pattern_id}/scaled")
         assert response.status_code == 400
 
     def test_returns_400_when_no_scaling_config(self):
         pattern_id = uuid.uuid4()
         with patch("app.routers.scaling.scaling_service") as mock_svc:
-            mock_svc.scale_pattern.side_effect = ScalingConfigNotFoundError("No scaling")
+            mock_svc.scale_pattern.side_effect = ScalingConfigNotFoundError(
+                "No scaling"
+            )
             response = client.get(f"/patterns/{pattern_id}/scaled")
         assert response.status_code == 400
