@@ -207,7 +207,7 @@ def tokenize_line(
                     # consume the inch mark so it isn't treated as stray punctuation
                     j = pos
                     while j < len(line) and line[j].isspace():
-                        j += 1
+                        j += 1  # pragma: no cover
                     if j < len(line) and line[j] in _INCH_CHARS:
                         pos = j + 1
                     elif j + 1 < len(line) and line[j : j + 2] == "''":

@@ -422,6 +422,60 @@ class TestGetCalculations:
             with pytest.raises(ScalingConfigNotFoundError, match="size and gauge"):
                 service.get_calculations(MagicMock(), pattern_id)
 
+    def test_get_calculations_incomplete_pattern_yarn_data(self, service, pattern_id):
+        # Lines 147-151: grams_needed exists but meters_per_unit or grams_per_unit is None
+        py_id = uuid.uuid4()
+        pattern_yarn = _make_pattern_yarn(
+            py_id, grams_needed=[300.0], meters_per_unit=None, grams_per_unit=None
+        )
+        user_yarn = self._make_user_yarn_with_calc(
+            pattern_yarn, calculated_grams_needed=None, calculated_skeins_needed=None
+        )
+        scaling = _make_scaling(size_position=0)
+
+        with (
+            patch("app.services.yarn.yarn_service.scaling_repository") as mock_sr,
+            patch("app.services.yarn.yarn_service.yarn_repository") as mock_yr,
+        ):
+            mock_sr.get_by_pattern_id.return_value = scaling
+            mock_yr.get_by_pattern_id.return_value = [user_yarn]
+
+            result = service.get_calculations(MagicMock(), pattern_id)
+
+        entry = result["yarns"][0]
+        assert entry["calculated"] is False
+        assert "incomplete" in entry["message"].lower()
+
+    def test_get_calculations_unavailable_when_data_present_but_no_calc(
+        self, service, pattern_id
+    ):
+        # Line 153: grams_needed exists, pattern yarn data is complete, but no calculated value
+        # This path is reached when calculated_grams_needed is None despite data being present
+        py_id = uuid.uuid4()
+        pattern_yarn = _make_pattern_yarn(
+            py_id,
+            grams_needed=[300.0],
+            meters_per_unit=200.0,
+            grams_per_unit=100.0,
+        )
+        user_yarn = self._make_user_yarn_with_calc(
+            pattern_yarn, calculated_grams_needed=None, calculated_skeins_needed=None
+        )
+        scaling = _make_scaling(size_position=0)
+
+        with (
+            patch("app.services.yarn.yarn_service.scaling_repository") as mock_sr,
+            patch("app.services.yarn.yarn_service.yarn_repository") as mock_yr,
+        ):
+            mock_sr.get_by_pattern_id.return_value = scaling
+            mock_yr.get_by_pattern_id.return_value = [user_yarn]
+
+            result = service.get_calculations(MagicMock(), pattern_id)
+
+        entry = result["yarns"][0]
+        assert entry["calculated"] is False
+        assert entry["message"] == "Calculation is not available."
+
     def test_get_calculations_no_user_yarns(self, service, pattern_id):
         with (
             patch("app.services.yarn.yarn_service.scaling_repository") as mock_sr,

@@ -117,6 +117,16 @@ class TestInchDetection:
         text_values = " ".join(t["value"] for t in tokens if t["type"] == "text")
         assert "”" not in text_values
 
+    def test_size_group_with_space_consumed_by_regex_before_inch_mark(self):
+        # The SIZE_GROUP_RE consumes trailing whitespace via \s*, so m.end() lands
+        # directly on the inch mark. This exercises the overall inch-mark detection path.
+        tokens = _tok('13.5 (15, 16.5, 18, 19.5) "', num_sizes=5)
+        assert len(tokens) == 1
+        t = tokens[0]
+        assert t["type"] == "size_group"
+        assert t["unit"] == "inch"
+        assert t["values"] == [13.5, 15, 16.5, 18, 19.5]
+
     # --- no false positives ---
 
     def test_plain_number_no_inch_mark(self):
