@@ -8,6 +8,8 @@ from app.core.config import settings
 from app.routers import router as pattern_router
 from app.routers.abbreviation import router as abbreviation_router
 from app.routers.auth import router as auth_router
+from app.routers.scaling import router as scaling_router
+from app.routers.yarn import router as yarn_router
 
 app = FastAPI(
     title="Knitting App API",
@@ -25,6 +27,8 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(pattern_router)
 app.include_router(abbreviation_router)
+app.include_router(scaling_router)
+app.include_router(yarn_router)
 
 # Serve uploaded files (cover images, original PDFs, parsed JSON)
 # cover_image_path is stored as "storage/covers/<uuid>.jpg",

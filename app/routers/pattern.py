@@ -164,6 +164,8 @@ async def confirm_pattern(
         )
     except EmptyTitleError as e:
         raise HTTPException(status_code=422, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     return PatternResponse.model_validate(confirmed)
 

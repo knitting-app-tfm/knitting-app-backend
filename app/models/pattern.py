@@ -69,6 +69,7 @@ class Pattern(Base):
     yarns = relationship(
         "PatternYarn", back_populates="pattern", cascade="all, delete-orphan"
     )
+    scaling = relationship("UserScaling", back_populates="pattern", uselist=False)
 
 
 class PatternYarn(Base):
@@ -80,7 +81,13 @@ class PatternYarn(Base):
     yarn_weight = Column(Enum(YarnWeight, name="yarnweight"), nullable=True)
     meters_per_unit = Column(Float, nullable=True)
     grams_per_unit = Column(Float, nullable=True)
-    grams_needed = Column(Float, nullable=True)
+    grams_needed = Column(ARRAY(Float), nullable=True)
     strands = Column(Integer, nullable=False, default=1)
 
     pattern = relationship("Pattern", back_populates="yarns")
+    user_yarn = relationship(
+        "UserYarn",
+        back_populates="pattern_yarn",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )

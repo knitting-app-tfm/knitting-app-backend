@@ -23,11 +23,15 @@ Extract metadata from the pattern text below and return ONLY a JSON object with 
       "yarn_weight": "LACE" | "FINGERING" | "DK" | "ARAN" | "BULKY" | null,
       "meters_per_unit": number | null,
       "grams_per_unit": number | null,
-      "grams_needed": number | null,
+      "grams_needed": [number, ...] | null,
       "strands": integer
     }
   ]
 }
+
+For "grams_needed": return an array with one value per size, in the same order as "sizes".
+If the pattern gives a single value (one-size pattern), return a single-element array, e.g. [200].
+If the pattern does not specify grams needed for a yarn, return null.
 
 Pattern text:
 """
@@ -73,7 +77,7 @@ def mock_response() -> tuple[dict, str]:
                 "yarn_weight": "DK",
                 "meters_per_unit": 200.0,
                 "grams_per_unit": 100.0,
-                "grams_needed": 300.0,
+                "grams_needed": [300.0, 350.0, 400.0],
                 "strands": 1,
             }
         ],
@@ -100,5 +104,8 @@ def normalize(raw: dict) -> dict:
         except (ValueError, KeyError):
             yarn["yarn_weight"] = None
         yarn.setdefault("strands", 1)
+        gn = yarn.get("grams_needed")
+        if gn is not None and not isinstance(gn, list):
+            yarn["grams_needed"] = [float(gn)]
 
     return raw

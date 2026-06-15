@@ -87,3 +87,23 @@ class TestGetById:
         result = repo.get_by_id(db, uuid.uuid4())
 
         assert result is None
+
+
+class TestGetByCode:
+    def test_returns_abbreviation_when_code_matches(self, repo, db):
+        session, query_mock = db
+        mock_abbr = MagicMock(spec=Abbreviation)
+        query_mock.first.return_value = mock_abbr
+
+        result = repo.get_by_code(session, "k")
+
+        assert result is mock_abbr
+        query_mock.filter.assert_called_once()
+
+    def test_returns_none_when_code_not_found(self, repo, db):
+        session, query_mock = db
+        query_mock.first.return_value = None
+
+        result = repo.get_by_code(session, "unknown")
+
+        assert result is None

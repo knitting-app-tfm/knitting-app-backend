@@ -89,3 +89,24 @@ class TestReadTokensFile:
         result = pattern_storage.read_tokens_file("storage/tokens/bad.json")
 
         assert result == []
+
+
+class TestDeleteFile:
+    def test_deletes_existing_file(self, storage_base):
+        file_path = storage_base / "original" / "abc123.pdf"
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_bytes(b"data")
+
+        pattern_storage.delete_file("storage/original/abc123.pdf")
+
+        assert not file_path.exists()
+
+    def test_does_nothing_when_file_missing(self, storage_base):
+        pattern_storage.delete_file("storage/original/nonexistent.pdf")
+
+    def test_swallows_exceptions(self):
+        with patch(
+            "app.services.pattern.pattern_storage.Path",
+            side_effect=OSError("disk error"),
+        ):
+            pattern_storage.delete_file("storage/original/some.pdf")
