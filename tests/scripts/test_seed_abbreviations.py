@@ -200,3 +200,69 @@ class TestSeedAbbreviationsUpdateExisting:
             seed_abbreviations(update_existing=True, csv_path=csv_file)
 
         assert mock_db.commit.call_count == 2
+
+
+class TestSeedAbbreviationsDefaultBehavior:
+    def test_skips_seed_when_table_already_has_data(self, tmp_path):
+        csv_file = tmp_path / "abbreviations.csv"
+        _write_csv(csv_file, [])
+
+        mock_db = MagicMock()
+        mock_db.query.return_value.count.return_value = 5
+
+        with patch("scripts.seed_abbreviations.SessionLocal", return_value=mock_db):
+            seed_abbreviations(update_existing=False, csv_path=csv_file)
+
+        mock_db.add_all.assert_not_called()
+        mock_db.commit.assert_not_called()
+
+    def test_inserts_csv_rows_when_table_is_empty(self, tmp_path):
+        csv_file = tmp_path / "abbreviations.csv"
+        _write_csv(
+            csv_file,
+            [
+                {
+                    "abbreviation": "k",
+                    "full_name": "knit",
+                    "description": "desc",
+                    "type": "STITCH",
+                    "craft": "KNITTING",
+                    "video_link": "",
+                },
+                {
+                    "abbreviation": "ch",
+                    "full_name": "chain",
+                    "description": "desc2",
+                    "type": "STITCH",
+                    "craft": "CROCHET",
+                    "video_link": "",
+                },
+            ],
+        )
+
+        mock_db = MagicMock()
+        mock_db.query.return_value.count.return_value = 0
+
+        with patch("scripts.seed_abbreviations.SessionLocal", return_value=mock_db):
+            seed_abbreviations(update_existing=False, csv_path=csv_file)
+
+        mock_db.add_all.assert_called_once()
+        inserted = mock_db.add_all.call_args[0][0]
+        assert len(inserted) == 2
+        mock_db.commit.assert_called_once()
+
+    def test_rollback_and_exit_on_exception(self, tmp_path):
+        csv_file = tmp_path / "abbreviations.csv"
+        _write_csv(csv_file, [])
+
+        mock_db = MagicMock()
+        mock_db.query.side_effect = Exception("DB error")
+
+        with (
+            patch("scripts.seed_abbreviations.SessionLocal", return_value=mock_db),
+            patch("sys.exit") as mock_exit,
+        ):
+            seed_abbreviations(update_existing=False, csv_path=csv_file)
+
+        mock_db.rollback.assert_called_once()
+        mock_exit.assert_called_once_with(1)
