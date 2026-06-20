@@ -7,6 +7,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     SECRET_KEY: str
     RAVELRY_CLIENT_ID: str
+    RAVELRY_CLIENT_SECRET: str = ""
+    RAVELRY_REDIRECT_URI: str = "http://localhost:8000/auth/ravelry/callback"
+    FRONTEND_BASE_URL: str = "http://localhost:5173"
     GROQ_API_KEY: str
     STORAGE_BASE_PATH: str = "/app/storage"
     USE_MOCK_LLM: bool = False

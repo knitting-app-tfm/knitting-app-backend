@@ -12,7 +12,7 @@ services:
     depends_on:
       - backend
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=https://localhost:8000
 
   backend:
     build:
@@ -23,14 +23,20 @@ services:
     volumes:
       - .:/app
       - storage_data:/app/storage
+      - ./cert.pem:/app/cert.pem
+      - ./key.pem:/app/key.pem
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/knitting
       - SECRET_KEY=supersecretkey
-      - RAVELRY_CLIENT_ID=tuclientid
+      - RAVELRY_CLIENT_ID=${RAVELRY_CLIENT_ID}
+      - RAVELRY_CLIENT_SECRET=${RAVELRY_CLIENT_SECRET}
+      - RAVELRY_REDIRECT_URI=https://localhost:8000/auth/ravelry/callback
+      - FRONTEND_BASE_URL=http://localhost:5173
       - GROQ_API_KEY=${GROQ_API_KEY}
       - STORAGE_BASE_PATH=/app/storage
       - USE_MOCK_LLM=${USE_MOCK_LLM:-false}
       - FIREBASE_WEB_API_KEY=${FIREBASE_WEB_API_KEY}
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --ssl-keyfile=/app/key.pem --ssl-certfile=/app/cert.pem
     depends_on:
       - db
 
