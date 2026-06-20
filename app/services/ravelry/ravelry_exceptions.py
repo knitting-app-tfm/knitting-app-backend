@@ -1,0 +1,2 @@
+class RavelryAuthError(Exception):
+    pass
