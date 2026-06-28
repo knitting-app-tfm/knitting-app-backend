@@ -1,171 +1,171 @@
-"abbreviation","full_name","description","type","craft","video_link"
-"k","knit","Insert needle into stitch from left to right, wrap yarn counterclockwise and pull through.","STITCH","KNITTING",""
-"p","purl","Insert needle into stitch from right to left, wrap yarn counterclockwise and pull through.","STITCH","KNITTING",""
-"St st","stockinette stitch","Alternating rows of knit (RS) and purl (WS), producing a smooth fabric on the right side.","STITCH","KNITTING",""
-"rev St st","reverse stockinette stitch","Alternating rows of purl (RS) and knit (WS); bumpy texture is the right side.","STITCH","KNITTING",""
-"k1B","knit stitch in row below","Insert needle into the stitch one row below the next stitch on the left needle and knit it.","STITCH","KNITTING",""
-"tbl","through back loop","Work the stitch by inserting the needle into the back leg of the loop instead of the front, twisting the stitch.","STITCH","KNITTING",""
-"tfl","through front loop","Work the stitch by inserting the needle into the front leg of the loop (the standard default position).","STITCH","KNITTING",""
-"C4F","cable 4 front","Slip 2 stitches to cable needle and hold in front, knit 2, then knit 2 from cable needle. Creates a left-leaning cable.","STITCH","KNITTING",""
-"C4B","cable 4 back","Slip 2 stitches to cable needle and hold in back, knit 2, then knit 2 from cable needle. Creates a right-leaning cable.","STITCH","KNITTING",""
-"MB","make bobble","Work multiple stitches into one stitch then decrease back to one, creating a three-dimensional bobble on the fabric.","STITCH","KNITTING",""
-"kwise","knitwise","Insert needle as if to knit (from left to right through the front of the stitch).","STITCH","KNITTING",""
-"pwise","purlwise","Insert needle as if to purl (from right to left through the front of the stitch).","STITCH","KNITTING",""
-"kfb","knit front and back","Knit into the front of the stitch, then without removing it from the left needle, knit into the back. Single increase, leaves a visible bar.","INCREASE","KNITTING",""
-"pfb","purl front and back","Purl into the front of the stitch, then purl into the back of the same stitch. Single purl increase.","INCREASE","KNITTING",""
-"M1","make one","Lift the horizontal bar between stitches onto the left needle and knit into it. Nearly invisible increase.","INCREASE","KNITTING",""
-"M1K","make one knitwise","Lift the bar between stitches and knit through the back loop to avoid a hole.","INCREASE","KNITTING",""
-"M1L","make one left","Lift the bar between stitches from front to back onto the left needle and knit through the back loop. Left-leaning increase.","INCREASE","KNITTING",""
-"M1R","make one right","Lift the bar between stitches from back to front onto the left needle and knit through the front loop. Right-leaning increase.","INCREASE","KNITTING",""
-"M1p","make one purlwise","Lift the bar between stitches and purl through the back loop. Single purl increase.","INCREASE","KNITTING",""
-"M1rp","make one right purlwise","Right-leaning purl increase. Lift bar back-to-front and purl through front loop.","INCREASE","KNITTING",""
-"M1lp","make one left purlwise","Left-leaning purl increase. Lift bar front-to-back and purl through back loop.","INCREASE","KNITTING",""
-"yo","yarn over","Wrap the working yarn around the right needle to create a new stitch and a decorative hole. Foundation of lace knitting.","INCREASE","KNITTING",""
-"yon","yarn over needle","Vintage term for yarn over (yo). Wrap yarn over the top of the right needle.","INCREASE","KNITTING",""
-"yrn","yarn round needle","Vintage term for yarn over (yo) used between purl stitches. Wrap yarn completely around the needle.","INCREASE","KNITTING",""
-"byo","backward yarn over","Create a yarn over in the opposite direction, resulting in a twisted stitch on the following row.","INCREASE","KNITTING",""
-"inc","increase","Generic instruction to add one or more stitches. Method specified by the pattern.","INCREASE","KNITTING",""
-"k2tog","knit 2 together","Insert needle through 2 stitches at once and knit as one. Single right-leaning decrease.","DECREASE","KNITTING",""
-"p2tog","purl 2 together","Insert needle through 2 stitches purlwise and purl as one. Single decrease on purl side.","DECREASE","KNITTING",""
-"ssk","slip slip knit","Slip 2 stitches knitwise one at a time, then knit them together through back loops. Single left-leaning decrease.","DECREASE","KNITTING",""
-"ssp","slip slip purl","Slip 2 stitches knitwise, return to left needle, purl together through back loops. Single left-leaning decrease on purl side.","DECREASE","KNITTING",""
-"sssk","slip slip slip knit","Slip 3 stitches knitwise, knit together through back loops. Double left-leaning decrease.","DECREASE","KNITTING",""
-"sssp","slip slip slip purl","Slip 3 stitches knitwise, return, purl together through back loops. Double left-leaning decrease on purl side.","DECREASE","KNITTING",""
-"SKP","slip knit pass over","Slip 1 knitwise, knit 1, pass slipped stitch over. Single left-leaning decrease.","DECREASE","KNITTING",""
-"SK2P","slip knit 2 together pass","Slip 1 knitwise, k2tog, pass slipped stitch over. Double left-leaning decrease.","DECREASE","KNITTING",""
-"S2KP2","slip 2 knit 1 pass 2 over","Slip 2 as if to k2tog, knit 1, pass both slipped stitches over. Centered double decrease.","DECREASE","KNITTING",""
-"CDD","central double decrease","Slip 2 together knitwise, knit 1, pass both slipped stitches over. Symmetrical centered double decrease.","DECREASE","KNITTING",""
-"ksp","knit slip pass","Knit 1, slip this stitch back to left needle, pass second stitch over, return to right needle. Single right-leaning decrease.","DECREASE","KNITTING",""
-"psso","pass slipped stitch over","Pass the previously slipped stitch over the last worked stitch and off the needle.","DECREASE","KNITTING",""
-"p2sso","pass 2 slipped stitches over","Pass 2 slipped stitches over the last worked stitch. Used for double decreases.","DECREASE","KNITTING",""
-"dec","decrease","Generic instruction to remove one or more stitches. Method specified by the pattern.","DECREASE","KNITTING",""
-"CO","cast on","Create initial stitches on the needle to begin knitting. Multiple methods exist (long-tail, knitted, cable cast on).","CONSTRUCTION","KNITTING",""
-"BO","bind off","Secure stitches to prevent unraveling when finishing a piece. Also called cast off.","CONSTRUCTION","KNITTING",""
-"sl","slip","Move a stitch from left needle to right needle without working it.","CONSTRUCTION","KNITTING",""
-"sl1k","slip 1 knitwise","Slip 1 stitch as if to knit (insert needle from left to right) without working it.","CONSTRUCTION","KNITTING",""
-"sl1p","slip 1 purlwise","Slip 1 stitch as if to purl (insert needle from right to left) without working it.","CONSTRUCTION","KNITTING",""
-"sl st","slip stitch","Slip a stitch without working it. In knitting used for edgings and joining seams.","CONSTRUCTION","KNITTING",""
-"dpn","double-pointed needles","Set of short needles with points at both ends, used for knitting in the round on small circumferences.","CONSTRUCTION","KNITTING",""
-"cn","cable needle","Short needle used to hold stitches temporarily while working cables.","CONSTRUCTION","KNITTING",""
-"rnd","round","One complete circuit of stitches when working in the round.","CONSTRUCTION","KNITTING",""
-"LH","left hand","Reference to the left hand or left needle.","CONSTRUCTION","KNITTING",""
-"RH","right hand","Reference to the right hand or right needle.","CONSTRUCTION","KNITTING",""
-"w&t","wrap and turn","Short row technique: wrap yarn around next stitch and turn work to prevent holes when working partial rows.","TECHNIQUE","KNITTING",""
-"GSR","German short row","Short row technique that avoids holes by pulling up a double stitch instead of wrapping. Popular modern alternative to w&t.","TECHNIQUE","KNITTING",""
-"wyib","with yarn in back","Hold the working yarn behind the work before the next action.","YARN_HANDLING","KNITTING",""
-"wyif","with yarn in front","Bring the working yarn to the front of the work before the next action.","YARN_HANDLING","KNITTING",""
-"yb","yarn back","Take the yarn to the back of the work between the needles.","YARN_HANDLING","KNITTING",""
-"yfwd","yarn forward","Bring the yarn to the front between the needles. In modern patterns often part of a yarn over.","YARN_HANDLING","KNITTING",""
-"yf","yarn forward","Alternate abbreviation for yfwd. Bring yarn to front between needles.","YARN_HANDLING","KNITTING",""
-"tog","together","Work two or more stitches as one.","YARN_HANDLING","KNITTING",""
-"pm","place marker","Place a stitch marker on the needle at the current position.","MARKER","KNITTING",""
-"sm","slip marker","Move the stitch marker from the left needle to the right needle without working it.","MARKER","KNITTING",""
-"m","marker","A stitch marker used to indicate a specific position in the pattern.","MARKER","KNITTING",""
-"RS","right side","The public-facing or outside of the fabric.","PATTERN_STRUCTURE","KNITTING",""
-"WS","wrong side","The inside or back of the fabric.","PATTERN_STRUCTURE","KNITTING",""
-"rep","repeat","Work the bracketed or asterisked section again as many times as directed.","PATTERN_STRUCTURE","KNITTING",""
-"beg","beginning","The start of a row, round, or section.","PATTERN_STRUCTURE","KNITTING",""
-"rem","remaining","The stitches left over after working a section.","PATTERN_STRUCTURE","KNITTING",""
-"foll","following","Refers to the next row, round, or instruction.","PATTERN_STRUCTURE","KNITTING",""
-"cont","continue","Carry on working in the established pattern without change.","PATTERN_STRUCTURE","KNITTING",""
-"alt","alternate","Every other row or round.","PATTERN_STRUCTURE","KNITTING",""
-"approx","approximately","Not an exact measurement; work to roughly the specified dimension.","PATTERN_STRUCTURE","KNITTING",""
-"bet","between","In the space between two specified points.","PATTERN_STRUCTURE","KNITTING",""
-"pat","pattern","The established stitch pattern being worked.","PATTERN_STRUCTURE","KNITTING",""
-"patt","pattern","Alternate abbreviation for pattern.","PATTERN_STRUCTURE","KNITTING",""
-"prev","previous","Refers to the row or stitch worked before the current one.","PATTERN_STRUCTURE","KNITTING",""
-"lp","loop","A single loop of yarn on the needle.","PATTERN_STRUCTURE","KNITTING",""
-"st","stitch","A single loop on the needle representing one worked stitch.","PATTERN_STRUCTURE","KNITTING",""
-"CC","contrasting color","The secondary yarn color used in colorwork sections.","PATTERN_STRUCTURE","KNITTING",""
-"MC","main color","The primary or background yarn color in a colorwork project.","PATTERN_STRUCTURE","KNITTING",""
-"ch","chain stitch","Foundation stitch of crochet: yarn over, pull through loop on hook.","STITCH","CROCHET",""
-"sc","single crochet","Insert hook, pull up loop, yarn over, pull through both loops. Shortest US crochet stitch.","STITCH","CROCHET",""
-"hdc","half double crochet","Yarn over, insert hook, pull up loop, yarn over, pull through all 3 loops. Medium height US stitch.","STITCH","CROCHET",""
-"dc","double crochet","Yarn over, insert hook, pull up loop, (yarn over, pull through 2 loops) twice. Tall US stitch.","STITCH","CROCHET",""
-"tr","treble crochet","Yarn over twice, insert hook, pull up loop, (yarn over, pull through 2 loops) 3 times. US term.","STITCH","CROCHET",""
-"dtr","double treble crochet","Yarn over 3 times, insert hook, (yarn over, pull through 2 loops) 4 times.","STITCH","CROCHET",""
-"trtr","triple treble crochet","Yarn over 4 times before inserting hook. Extremely tall stitch.","STITCH","CROCHET",""
-"edc","extended double crochet","Variation of double crochet with an extra pull-through step, producing a taller looser stitch.","STITCH","CROCHET",""
-"ehdc","extended half double crochet","Variation of half double crochet with an extra pull-through step.","STITCH","CROCHET",""
-"esc","extended single crochet","Variation of single crochet with an extra pull-through step.","STITCH","CROCHET",""
-"etr","extended treble crochet","Variation of treble crochet with an extra pull-through step.","STITCH","CROCHET",""
-"sl st","slip stitch","Insert hook, yarn over, pull through both the stitch and the loop on hook in one motion.","STITCH","CROCHET",""
-"BPdc","back post double crochet","Yarn over, insert hook around the post from the back. Creates indented ribbed texture.","STITCH","CROCHET",""
-"FPdc","front post double crochet","Yarn over, insert hook around the post from the front. Creates raised ribbed texture.","STITCH","CROCHET",""
-"BPsc","back post single crochet","Insert hook around the post from the back. Subtle texture variation.","STITCH","CROCHET",""
-"FPsc","front post single crochet","Insert hook around the post from the front. Subtle raised texture.","STITCH","CROCHET",""
-"BPhdc","back post half double crochet","Half double crochet worked around the post from the back.","STITCH","CROCHET",""
-"FPhdc","front post half double crochet","Half double crochet worked around the post from the front.","STITCH","CROCHET",""
-"BPtr","back post treble crochet","Treble crochet worked around the post from the back.","STITCH","CROCHET",""
-"FPtr","front post treble crochet","Treble crochet worked around the post from the front.","STITCH","CROCHET",""
-"BPdtr","back post double treble crochet","Double treble worked around the post from the back.","STITCH","CROCHET",""
-"FPdtr","front post double treble crochet","Double treble worked around the post from the front.","STITCH","CROCHET",""
-"bo","bobble","Multiple incomplete double crochets worked in one stitch, joined at the top. Protrudes from right side.","STITCH","CROCHET",""
-"CL","cluster","Multiple incomplete stitches worked into one stitch or space and joined at the top.","STITCH","CROCHET",""
-"pc","popcorn stitch","5 complete double crochets in one stitch, then fold and join first to last. Creates a raised bump.","STITCH","CROCHET",""
-"ps","puff stitch","Multiple half-finished half double crochets in one stitch joined at top. Soft puffy texture.","STITCH","CROCHET",""
-"sh","shell","Multiple stitches (usually 5 dc) worked into the same stitch or space, creating a fan shape.","STITCH","CROCHET",""
-"V-St","V-stitch","(dc, ch1, dc) worked into the same stitch or space, creating a V shape.","STITCH","CROCHET",""
-"FDC","foundation double crochet","Creates foundation chain and first row of double crochet simultaneously.","STITCH","CROCHET",""
-"FSC","foundation single crochet","Creates foundation chain and first row of single crochet simultaneously.","STITCH","CROCHET",""
-"tss","Tunisian simple stitch","Basic Tunisian crochet stitch: insert hook, pull up loop (forward pass), then work off loops (return pass).","STITCH","CROCHET",""
-"tks","Tunisian knit stitch","Insert hook between front and back vertical bars of the stitch below. Creates a fabric resembling knitting.","STITCH","CROCHET",""
-"tps","Tunisian purl stitch","Bring yarn forward, insert hook as for tss. Creates a purl-like bump on the right side.","STITCH","CROCHET",""
-"tdc","Tunisian double crochet","Yarn over, insert hook, pull up loop, yarn over, pull through 2 loops, leaving remaining loop on hook.","STITCH","CROCHET",""
-"trs","Tunisian reverse stitch","Insert hook from right to left under the vertical bar. Creates a ribbed effect.","STITCH","CROCHET",""
-"tsc","Tunisian single crochet","Insert hook under the front vertical bar of the stitch below and pull up a loop.","STITCH","CROCHET",""
-"thdc","Tunisian half double crochet","Yarn over before inserting hook under the vertical bar, producing a medium-height Tunisian stitch.","STITCH","CROCHET",""
-"ttr","Tunisian treble crochet","Yarn over twice, insert hook under the vertical bar, complete as a treble but leave loop on hook.","STITCH","CROCHET",""
-"tfs","Tunisian full stitch","Insert hook under both vertical bars of the stitch below. Creates a dense fabric.","STITCH","CROCHET",""
-"ttw","Tunisian twisted","Insert hook under the vertical bar from right to left (twisted), creating a twisted stitch in Tunisian crochet.","STITCH","CROCHET",""
-"etss","extended Tunisian simple stitch","Adds an extra pull-through step to the standard Tunisian simple stitch, creating a slightly looser fabric.","STITCH","CROCHET",""
-"tslst","Tunisian slip stitch","Insert hook under vertical bar, pull up loop and pull directly through loop on hook.","STITCH","CROCHET",""
-"inc","increase","Work 2 stitches into the same stitch to add one stitch.","INCREASE","CROCHET",""
-"2sc","2 single crochets in one stitch","Work 2 single crochets into the same stitch. Common increase in amigurumi.","INCREASE","CROCHET",""
-"2dc","2 double crochets in one stitch","Work 2 double crochets into the same stitch.","INCREASE","CROCHET",""
-"sc2tog","single crochet 2 together","Insert hook, pull up loop, insert into next stitch, pull up loop, yarn over, pull through all loops.","DECREASE","CROCHET",""
-"dc2tog","double crochet 2 together","Work 2 incomplete double crochets, then join at top. Single decrease.","DECREASE","CROCHET",""
-"hdc2tog","half double crochet 2 together","Work 2 incomplete half double crochets and join at top. Single decrease.","DECREASE","CROCHET",""
-"tr2tog","treble crochet 2 together","Work 2 incomplete trebles and join at top. Single decrease.","DECREASE","CROCHET",""
-"InvDec","invisible decrease","Insert hook through front loops only of 2 stitches, pull up loop, yarn over, pull through all. Preferred for amigurumi.","DECREASE","CROCHET",""
-"dec","decrease","Generic instruction to reduce stitch count. Method specified by the pattern.","DECREASE","CROCHET",""
-"yo","yarn over","Wrap the yarn over the hook before or during a stitch. Fundamental crochet action.","YARN_HANDLING","CROCHET",""
-"yoh","yarn over hook","UK/alternative term for yarn over (yo). Wrap yarn over the hook.","YARN_HANDLING","CROCHET",""
-"tog","together","Work two or more stitches as one.","YARN_HANDLING","CROCHET",""
-"ch-sp","chain space","The gap created by a chain stitch in the previous row, used as an insertion point.","CONSTRUCTION","CROCHET",""
-"MR","magic ring","Adjustable starting ring for working in the round. Creates a closed center with no hole.","CONSTRUCTION","CROCHET",""
-"FO","fasten off","Cut yarn, pull tail through last loop and tighten to secure the final stitch.","CONSTRUCTION","CROCHET",""
-"tch","turning chain","Chain(s) worked at the start of a row to bring the hook to the correct height for the first stitch.","CONSTRUCTION","CROCHET",""
-"FwP","forward pass","First half of a Tunisian crochet row: pick up loops across the row.","CONSTRUCTION","CROCHET",""
-"RetP","return pass","Second half of a Tunisian crochet row: work off loops from hook.","CONSTRUCTION","CROCHET",""
-"rnd","round","One complete circuit of stitches when working in the round.","CONSTRUCTION","CROCHET",""
-"BLO","back loop only","Insert hook under the back loop only of the stitch. Creates a ridged texture.","TECHNIQUE","CROCHET",""
-"FLO","front loop only","Insert hook under the front loop only of the stitch. Creates a ridged texture.","TECHNIQUE","CROCHET",""
-"BL","back loop","The loop of the stitch furthest from you when the right side faces you.","TECHNIQUE","CROCHET",""
-"FL","front loop","The loop of the stitch closest to you when the right side faces you.","TECHNIQUE","CROCHET",""
-"tbl","through back loop","Work through the back loop of the stitch only.","TECHNIQUE","CROCHET",""
-"sk","skip","Pass over the next stitch without working into it.","TECHNIQUE","CROCHET",""
-"Block","blocking","Wet or steam the finished piece to set the stitches and shape the fabric.","TECHNIQUE","CROCHET",""
-"pm","place marker","Place a stitch marker in the current stitch to mark a specific position.","MARKER","CROCHET",""
-"sm","slip marker","Move the stitch marker to maintain its position.","MARKER","CROCHET",""
-"sl m","slip marker","Alternate abbreviation for slip marker.","MARKER","CROCHET",""
-"m","marker","A stitch marker used to indicate a specific position in the pattern.","MARKER","CROCHET",""
-"RS","right side","The public-facing or outside of the fabric.","PATTERN_STRUCTURE","CROCHET",""
-"WS","wrong side","The inside or back of the fabric.","PATTERN_STRUCTURE","CROCHET",""
-"rep","repeat","Work the bracketed or asterisked section again as many times as directed.","PATTERN_STRUCTURE","CROCHET",""
-"beg","beginning","The start of a row or round.","PATTERN_STRUCTURE","CROCHET",""
-"rem","remaining","The stitches left after working a section.","PATTERN_STRUCTURE","CROCHET",""
-"foll","following","Refers to the next instruction.","PATTERN_STRUCTURE","CROCHET",""
-"cont","continue","Carry on in the established pattern.","PATTERN_STRUCTURE","CROCHET",""
-"alt","alternate","Every other row or stitch.","PATTERN_STRUCTURE","CROCHET",""
-"approx","approximately","Not an exact measurement.","PATTERN_STRUCTURE","CROCHET",""
-"bet","between","In the space between two specified points.","PATTERN_STRUCTURE","CROCHET",""
-"pat","pattern","The established stitch pattern being worked.","PATTERN_STRUCTURE","CROCHET",""
-"prev","previous","The row or stitch worked before the current one.","PATTERN_STRUCTURE","CROCHET",""
-"sp","space","The gap created by chain stitches in the previous row.","PATTERN_STRUCTURE","CROCHET",""
-"st","stitch","A single worked loop.","PATTERN_STRUCTURE","CROCHET",""
-"lp","loop","A single loop of yarn on the hook.","PATTERN_STRUCTURE","CROCHET",""
-"CC","contrasting color","Secondary yarn color used in colorwork.","PATTERN_STRUCTURE","CROCHET",""
-"MC","main color","Primary yarn color in a colorwork project.","PATTERN_STRUCTURE","CROCHET",""
-"Gauge","gauge","Number of stitches and rows per inch/cm. UK term: tension.","PATTERN_STRUCTURE","CROCHET",""
-"ch-","chain space reference","Refers to a chain or space previously made, e.g. ch-1 space.","PATTERN_STRUCTURE","CROCHET",""
+abbreviation,full_name,description,type,craft,video_link
+k,knit,"Insert needle into stitch from left to right, wrap yarn counterclockwise and pull through.",STITCH,KNITTING,https://www.youtube.com/embed/Egp4NRhlMDg
+p,purl,"Insert needle into stitch from right to left, wrap yarn counterclockwise and pull through.",STITCH,KNITTING,https://www.youtube.com/embed/7ePhLqw6HDM
+St st,stockinette stitch,"Alternating rows of knit (RS) and purl (WS), producing a smooth fabric on the right side.",STITCH,KNITTING,https://www.youtube.com/embed/rlaC5C5nJR8
+rev St st,reverse stockinette stitch,Alternating rows of purl (RS) and knit (WS); bumpy texture is the right side.,STITCH,KNITTING,https://www.youtube.com/embed/r4Li6Mevsaw
+k1B,knit stitch in row below,Insert needle into the stitch one row below the next stitch on the left needle and knit it.,STITCH,KNITTING,https://www.youtube.com/embed/Q-lPfnvGQNk
+tbl,through back loop,"Work the stitch by inserting the needle into the back leg of the loop instead of the front, twisting the stitch.",STITCH,KNITTING,https://www.youtube.com/embed/1gwR-JIkK6k
+tfl,through front loop,Work the stitch by inserting the needle into the front leg of the loop (the standard default position).,STITCH,KNITTING,https://www.youtube.com/embed/18v-F3JJXJk
+C4F,cable 4 front,"Slip 2 stitches to cable needle and hold in front, knit 2, then knit 2 from cable needle. Creates a left-leaning cable.",STITCH,KNITTING,https://www.youtube.com/embed/8czhQ05DRkU
+C4B,cable 4 back,"Slip 2 stitches to cable needle and hold in back, knit 2, then knit 2 from cable needle. Creates a right-leaning cable.",STITCH,KNITTING,https://www.youtube.com/embed/HO4en_klxtM
+MB,make bobble,"Work multiple stitches into one stitch then decrease back to one, creating a three-dimensional bobble on the fabric.",STITCH,KNITTING,https://www.youtube.com/embed/mTpZsSlsNCg
+kwise,knitwise,Insert needle as if to knit (from left to right through the front of the stitch).,STITCH,KNITTING,https://www.youtube.com/embed/Y1SwoXDoXFM
+pwise,purlwise,Insert needle as if to purl (from right to left through the front of the stitch).,STITCH,KNITTING,https://www.youtube.com/embed/7ePhLqw6HDM
+kfb,knit front and back,"Knit into the front of the stitch, then without removing it from the left needle, knit into the back. Single increase, leaves a visible bar.",INCREASE,KNITTING,https://www.youtube.com/embed/O0qa_UmJMhI
+pfb,purl front and back,"Purl into the front of the stitch, then purl into the back of the same stitch. Single purl increase.",INCREASE,KNITTING,https://www.youtube.com/embed/pi7ZsnBwjEc
+M1,make one,Lift the horizontal bar between stitches onto the left needle and knit into it. Nearly invisible increase.,INCREASE,KNITTING,https://www.youtube.com/embed/E31Il_LeKs4
+M1K,make one knitwise,Lift the bar between stitches and knit through the back loop to avoid a hole.,INCREASE,KNITTING,https://www.youtube.com/embed/E31Il_LeKs4
+M1L,make one left,Lift the bar between stitches from front to back onto the left needle and knit through the back loop. Left-leaning increase.,INCREASE,KNITTING,https://www.youtube.com/embed/XygPZ2cWBeA
+M1R,make one right,Lift the bar between stitches from back to front onto the left needle and knit through the front loop. Right-leaning increase.,INCREASE,KNITTING,https://www.youtube.com/embed/XygPZ2cWBeA
+M1p,make one purlwise,Lift the bar between stitches and purl through the back loop. Single purl increase.,INCREASE,KNITTING,https://www.youtube.com/embed/rIlBu_3-lzM
+M1rp,make one right purlwise,Right-leaning purl increase. Lift bar back-to-front and purl through front loop.,INCREASE,KNITTING,https://www.youtube.com/embed/cj_PDBUdN-k
+M1lp,make one left purlwise,Left-leaning purl increase. Lift bar front-to-back and purl through back loop.,INCREASE,KNITTING,https://www.youtube.com/embed/rIlBu_3-lzM
+yo,yarn over,Wrap the working yarn around the right needle to create a new stitch and a decorative hole. Foundation of lace knitting.,INCREASE,KNITTING,https://www.youtube.com/embed/BLsB1IJmTaM
+yon,yarn over needle,Vintage term for yarn over (yo). Wrap yarn over the top of the right needle.,INCREASE,KNITTING,https://www.youtube.com/embed/BLsB1IJmTaM
+yrn,yarn round needle,Vintage term for yarn over (yo) used between purl stitches. Wrap yarn completely around the needle.,INCREASE,KNITTING,https://www.youtube.com/embed/0rjokSak9sA
+byo,backward yarn over,"Create a yarn over in the opposite direction, resulting in a twisted stitch on the following row.",INCREASE,KNITTING,https://www.youtube.com/embed/w76UfObQhyM
+inc,increase,Generic instruction to add one or more stitches. Method specified by the pattern.,INCREASE,KNITTING,https://www.youtube.com/embed/67LYFUt69jY
+k2tog,knit 2 together,Insert needle through 2 stitches at once and knit as one. Single right-leaning decrease.,DECREASE,KNITTING,https://www.youtube.com/embed/Lx8BySRLlAE
+p2tog,purl 2 together,Insert needle through 2 stitches purlwise and purl as one. Single decrease on purl side.,DECREASE,KNITTING,https://www.youtube.com/embed/Y3g6UoxnLmQ
+ssk,slip slip knit,"Slip 2 stitches knitwise one at a time, then knit them together through back loops. Single left-leaning decrease.",DECREASE,KNITTING,https://www.youtube.com/embed/_zjV9QOGW-M
+ssp,slip slip purl,"Slip 2 stitches knitwise, return to left needle, purl together through back loops. Single left-leaning decrease on purl side.",DECREASE,KNITTING,https://www.youtube.com/embed/9melw6FgzCM
+sssk,slip slip slip knit,"Slip 3 stitches knitwise, knit together through back loops. Double left-leaning decrease.",DECREASE,KNITTING,https://www.youtube.com/embed/_zjV9QOGW-M
+sssp,slip slip slip purl,"Slip 3 stitches knitwise, return, purl together through back loops. Double left-leaning decrease on purl side.",DECREASE,KNITTING,https://www.youtube.com/embed/b1MXZJr59xM
+SKP,slip knit pass over,"Slip 1 knitwise, knit 1, pass slipped stitch over. Single left-leaning decrease.",DECREASE,KNITTING,https://www.youtube.com/embed/ulwlEqVCXBA
+SK2P,slip knit 2 together pass,"Slip 1 knitwise, k2tog, pass slipped stitch over. Double left-leaning decrease.",DECREASE,KNITTING,https://www.youtube.com/embed/_zjV9QOGW-M
+S2KP2,slip 2 knit 1 pass 2 over,"Slip 2 as if to k2tog, knit 1, pass both slipped stitches over. Centered double decrease.",DECREASE,KNITTING,https://www.youtube.com/embed/cYqB_BIcRJs
+CDD,central double decrease,"Slip 2 together knitwise, knit 1, pass both slipped stitches over. Symmetrical centered double decrease.",DECREASE,KNITTING,https://www.youtube.com/embed/9oBQLjfcXrY
+ksp,knit slip pass,"Knit 1, slip this stitch back to left needle, pass second stitch over, return to right needle. Single right-leaning decrease.",DECREASE,KNITTING,https://www.youtube.com/embed/9dmiu_BTA2U
+psso,pass slipped stitch over,Pass the previously slipped stitch over the last worked stitch and off the needle.,DECREASE,KNITTING,https://www.youtube.com/embed/ulwlEqVCXBA
+p2sso,pass 2 slipped stitches over,Pass 2 slipped stitches over the last worked stitch. Used for double decreases.,DECREASE,KNITTING,https://www.youtube.com/embed/ulwlEqVCXBA
+dec,decrease,Generic instruction to remove one or more stitches. Method specified by the pattern.,DECREASE,KNITTING,https://www.youtube.com/embed/_zjV9QOGW-M
+CO,cast on,"Create initial stitches on the needle to begin knitting. Multiple methods exist (long-tail, knitted, cable cast on).",CONSTRUCTION,KNITTING,https://www.youtube.com/embed/RTlKUMmFSgQ
+BO,bind off,Secure stitches to prevent unraveling when finishing a piece. Also called cast off.,CONSTRUCTION,KNITTING,https://www.youtube.com/embed/H5a8jUGK7Nw
+sl,slip,Move a stitch from left needle to right needle without working it.,CONSTRUCTION,KNITTING,https://www.youtube.com/embed/-zh3XCheDGw
+sl1k,slip 1 knitwise,Slip 1 stitch as if to knit (insert needle from left to right) without working it.,CONSTRUCTION,KNITTING,https://www.youtube.com/embed/XygPZ2cWBeA
+sl1p,slip 1 purlwise,Slip 1 stitch as if to purl (insert needle from right to left) without working it.,CONSTRUCTION,KNITTING,https://www.youtube.com/embed/7ePhLqw6HDM
+sl st,slip stitch,Slip a stitch without working it. In knitting used for edgings and joining seams.,CONSTRUCTION,KNITTING,https://www.youtube.com/embed/BKrGDMGX7AU
+dpn,double-pointed needles,"Set of short needles with points at both ends, used for knitting in the round on small circumferences.",CONSTRUCTION,KNITTING,https://www.youtube.com/embed/IRV5jy3sOm4
+cn,cable needle,Short needle used to hold stitches temporarily while working cables.,CONSTRUCTION,KNITTING,https://www.youtube.com/embed/6_OV8a2895o
+rnd,round,One complete circuit of stitches when working in the round.,CONSTRUCTION,KNITTING,https://www.youtube.com/embed/VJsFdVUUqnw
+LH,left hand,Reference to the left hand or left needle.,CONSTRUCTION,KNITTING,https://www.youtube.com/embed/ly5v7kMkdiA
+RH,right hand,Reference to the right hand or right needle.,CONSTRUCTION,KNITTING,https://www.youtube.com/embed/JtMUp7wcE6w
+w&t,wrap and turn,Short row technique: wrap yarn around next stitch and turn work to prevent holes when working partial rows.,TECHNIQUE,KNITTING,https://www.youtube.com/embed/G4GxFvi4KD0
+GSR,German short row,Short row technique that avoids holes by pulling up a double stitch instead of wrapping. Popular modern alternative to w&t.,TECHNIQUE,KNITTING,https://www.youtube.com/embed/QoScYNW9LrU
+wyib,with yarn in back,Hold the working yarn behind the work before the next action.,YARN_HANDLING,KNITTING,
+wyif,with yarn in front,Bring the working yarn to the front of the work before the next action.,YARN_HANDLING,KNITTING,
+yb,yarn back,Take the yarn to the back of the work between the needles.,YARN_HANDLING,KNITTING,
+yfwd,yarn forward,Bring the yarn to the front between the needles. In modern patterns often part of a yarn over.,YARN_HANDLING,KNITTING,
+yf,yarn forward,Alternate abbreviation for yfwd. Bring yarn to front between needles.,YARN_HANDLING,KNITTING,
+tog,together,Work two or more stitches as one.,YARN_HANDLING,KNITTING,
+pm,place marker,Place a stitch marker on the needle at the current position.,MARKER,KNITTING,
+sm,slip marker,Move the stitch marker from the left needle to the right needle without working it.,MARKER,KNITTING,
+m,marker,A stitch marker used to indicate a specific position in the pattern.,MARKER,KNITTING,
+RS,right side,The public-facing or outside of the fabric.,PATTERN_STRUCTURE,KNITTING,
+WS,wrong side,The inside or back of the fabric.,PATTERN_STRUCTURE,KNITTING,
+rep,repeat,Work the bracketed or asterisked section again as many times as directed.,PATTERN_STRUCTURE,KNITTING,
+beg,beginning,"The start of a row, round, or section.",PATTERN_STRUCTURE,KNITTING,
+rem,remaining,The stitches left over after working a section.,PATTERN_STRUCTURE,KNITTING,
+foll,following,"Refers to the next row, round, or instruction.",PATTERN_STRUCTURE,KNITTING,
+cont,continue,Carry on working in the established pattern without change.,PATTERN_STRUCTURE,KNITTING,
+alt,alternate,Every other row or round.,PATTERN_STRUCTURE,KNITTING,
+approx,approximately,Not an exact measurement; work to roughly the specified dimension.,PATTERN_STRUCTURE,KNITTING,
+bet,between,In the space between two specified points.,PATTERN_STRUCTURE,KNITTING,
+pat,pattern,The established stitch pattern being worked.,PATTERN_STRUCTURE,KNITTING,
+patt,pattern,Alternate abbreviation for pattern.,PATTERN_STRUCTURE,KNITTING,
+prev,previous,Refers to the row or stitch worked before the current one.,PATTERN_STRUCTURE,KNITTING,
+lp,loop,A single loop of yarn on the needle.,PATTERN_STRUCTURE,KNITTING,
+st,stitch,A single loop on the needle representing one worked stitch.,PATTERN_STRUCTURE,KNITTING,
+CC,contrasting color,The secondary yarn color used in colorwork sections.,PATTERN_STRUCTURE,KNITTING,
+MC,main color,The primary or background yarn color in a colorwork project.,PATTERN_STRUCTURE,KNITTING,
+ch,chain stitch,"Foundation stitch of crochet: yarn over, pull through loop on hook.",STITCH,CROCHET,https://www.youtube.com/embed/o-Il8OcNAZA
+sc,single crochet,"Insert hook, pull up loop, yarn over, pull through both loops. Shortest US crochet stitch.",STITCH,CROCHET,https://www.youtube.com/embed/wgVOkQcf5qw
+hdc,half double crochet,"Yarn over, insert hook, pull up loop, yarn over, pull through all 3 loops. Medium height US stitch.",STITCH,CROCHET,https://www.youtube.com/embed/f9C1C21MNiM
+dc,double crochet,"Yarn over, insert hook, pull up loop, (yarn over, pull through 2 loops) twice. Tall US stitch.",STITCH,CROCHET,https://www.youtube.com/embed/nKnAjKEM4fI
+tr,treble crochet,"Yarn over twice, insert hook, pull up loop, (yarn over, pull through 2 loops) 3 times. US term.",STITCH,CROCHET,https://www.youtube.com/embed/3KtzjAAZHVY
+dtr,double treble crochet,"Yarn over 3 times, insert hook, (yarn over, pull through 2 loops) 4 times.",STITCH,CROCHET,https://www.youtube.com/embed/QsOcZdC8CVw
+trtr,triple treble crochet,Yarn over 4 times before inserting hook. Extremely tall stitch.,STITCH,CROCHET,https://www.youtube.com/embed/3KtzjAAZHVY
+edc,extended double crochet,"Variation of double crochet with an extra pull-through step, producing a taller looser stitch.",STITCH,CROCHET,https://www.youtube.com/embed/m-5iyH_mj7s
+ehdc,extended half double crochet,Variation of half double crochet with an extra pull-through step.,STITCH,CROCHET,https://www.youtube.com/embed/3KbEsyFoGhI
+esc,extended single crochet,Variation of single crochet with an extra pull-through step.,STITCH,CROCHET,https://www.youtube.com/embed/hJKVvd-1V-o
+etr,extended treble crochet,Variation of treble crochet with an extra pull-through step.,STITCH,CROCHET,https://www.youtube.com/embed/I7jFU79Z7QE
+sl st,slip stitch,"Insert hook, yarn over, pull through both the stitch and the loop on hook in one motion.",STITCH,CROCHET,https://www.youtube.com/embed/y70CjT8XXnY
+BPdc,back post double crochet,"Yarn over, insert hook around the post from the back. Creates indented ribbed texture.",STITCH,CROCHET,https://www.youtube.com/embed/S42_486HrEU
+FPdc,front post double crochet,"Yarn over, insert hook around the post from the front. Creates raised ribbed texture.",STITCH,CROCHET,https://www.youtube.com/embed/S42_486HrEU
+BPsc,back post single crochet,Insert hook around the post from the back. Subtle texture variation.,STITCH,CROCHET,https://www.youtube.com/embed/pZ4ZyO0n_9c
+FPsc,front post single crochet,Insert hook around the post from the front. Subtle raised texture.,STITCH,CROCHET,https://www.youtube.com/embed/hCdKkLlUhbY
+BPhdc,back post half double crochet,Half double crochet worked around the post from the back.,STITCH,CROCHET,https://www.youtube.com/embed/yKfXAsHmg5o
+FPhdc,front post half double crochet,Half double crochet worked around the post from the front.,STITCH,CROCHET,https://www.youtube.com/embed/g5573ZdIx6U
+BPtr,back post treble crochet,Treble crochet worked around the post from the back.,STITCH,CROCHET,https://www.youtube.com/embed/xkFwMaa2eb0
+FPtr,front post treble crochet,Treble crochet worked around the post from the front.,STITCH,CROCHET,https://www.youtube.com/embed/D2IfEDek8Hk
+BPdtr,back post double treble crochet,Double treble worked around the post from the back.,STITCH,CROCHET,https://www.youtube.com/embed/QsOcZdC8CVw
+FPdtr,front post double treble crochet,Double treble worked around the post from the front.,STITCH,CROCHET,https://www.youtube.com/embed/6CzCB0mmjEI
+bo,bobble,"Multiple incomplete double crochets worked in one stitch, joined at the top. Protrudes from right side.",STITCH,CROCHET,https://www.youtube.com/embed/eNglcUXkZb4
+CL,cluster,Multiple incomplete stitches worked into one stitch or space and joined at the top.,STITCH,CROCHET,https://www.youtube.com/embed/UkTzcXfXktA
+pc,popcorn stitch,"5 complete double crochets in one stitch, then fold and join first to last. Creates a raised bump.",STITCH,CROCHET,https://www.youtube.com/embed/QPl067cnrHU
+ps,puff stitch,Multiple half-finished half double crochets in one stitch joined at top. Soft puffy texture.,STITCH,CROCHET,https://www.youtube.com/embed/tnKHO2sartE
+sh,shell,"Multiple stitches (usually 5 dc) worked into the same stitch or space, creating a fan shape.",STITCH,CROCHET,https://www.youtube.com/embed/_S4E8g52U0w
+V-St,V-stitch,"(dc, ch1, dc) worked into the same stitch or space, creating a V shape.",STITCH,CROCHET,https://www.youtube.com/embed/GdWsmdzCyJQ
+FDC,foundation double crochet,Creates foundation chain and first row of double crochet simultaneously.,STITCH,CROCHET,https://www.youtube.com/embed/PCNcKEBr790
+FSC,foundation single crochet,Creates foundation chain and first row of single crochet simultaneously.,STITCH,CROCHET,https://www.youtube.com/embed/IFC-as6XS6Q
+tss,Tunisian simple stitch,"Basic Tunisian crochet stitch: insert hook, pull up loop (forward pass), then work off loops (return pass).",STITCH,CROCHET,https://www.youtube.com/embed/bdCwSR3Sqp4
+tks,Tunisian knit stitch,Insert hook between front and back vertical bars of the stitch below. Creates a fabric resembling knitting.,STITCH,CROCHET,https://www.youtube.com/embed/SeXbDmgK5FI
+tps,Tunisian purl stitch,"Bring yarn forward, insert hook as for tss. Creates a purl-like bump on the right side.",STITCH,CROCHET,https://www.youtube.com/embed/3xoIxb06zGw
+tdc,Tunisian double crochet,"Yarn over, insert hook, pull up loop, yarn over, pull through 2 loops, leaving remaining loop on hook.",STITCH,CROCHET,https://www.youtube.com/embed/8Q0DjJVyPAo
+trs,Tunisian reverse stitch,Insert hook from right to left under the vertical bar. Creates a ribbed effect.,STITCH,CROCHET,https://www.youtube.com/embed/_Xaf6r6EfVI
+tsc,Tunisian single crochet,Insert hook under the front vertical bar of the stitch below and pull up a loop.,STITCH,CROCHET,https://www.youtube.com/embed/ZbMDz4egpVU
+thdc,Tunisian half double crochet,"Yarn over before inserting hook under the vertical bar, producing a medium-height Tunisian stitch.",STITCH,CROCHET,https://www.youtube.com/embed/avqTGP3F5Gk
+ttr,Tunisian treble crochet,"Yarn over twice, insert hook under the vertical bar, complete as a treble but leave loop on hook.",STITCH,CROCHET,https://www.youtube.com/embed/FIFW6qvpnaw
+tfs,Tunisian full stitch,Insert hook under both vertical bars of the stitch below. Creates a dense fabric.,STITCH,CROCHET,https://www.youtube.com/embed/Are5RE4e6es
+ttw,Tunisian twisted,"Insert hook under the vertical bar from right to left (twisted), creating a twisted stitch in Tunisian crochet.",STITCH,CROCHET,https://www.youtube.com/embed/CraYB32ViBU
+etss,extended Tunisian simple stitch,"Adds an extra pull-through step to the standard Tunisian simple stitch, creating a slightly looser fabric.",STITCH,CROCHET,https://www.youtube.com/embed/ZbMDz4egpVU
+tslst,Tunisian slip stitch,"Insert hook under vertical bar, pull up loop and pull directly through loop on hook.",STITCH,CROCHET,https://www.youtube.com/embed/ZbMDz4egpVU
+inc,increase,Work 2 stitches into the same stitch to add one stitch.,INCREASE,CROCHET,https://www.youtube.com/embed/5aDHW7yOICk
+2sc,2 single crochets in one stitch,Work 2 single crochets into the same stitch. Common increase in amigurumi.,INCREASE,CROCHET,https://www.youtube.com/embed/5aDHW7yOICk
+2dc,2 double crochets in one stitch,Work 2 double crochets into the same stitch.,INCREASE,CROCHET,https://www.youtube.com/embed/mcyk3wgyWnw
+sc2tog,single crochet 2 together,"Insert hook, pull up loop, insert into next stitch, pull up loop, yarn over, pull through all loops.",DECREASE,CROCHET,https://www.youtube.com/embed/G6f2X6g4pKQ
+dc2tog,double crochet 2 together,"Work 2 incomplete double crochets, then join at top. Single decrease.",DECREASE,CROCHET,https://www.youtube.com/embed/P-OiZd9dfso
+hdc2tog,half double crochet 2 together,Work 2 incomplete half double crochets and join at top. Single decrease.,DECREASE,CROCHET,https://www.youtube.com/embed/-lnSDsrbNIM
+tr2tog,treble crochet 2 together,Work 2 incomplete trebles and join at top. Single decrease.,DECREASE,CROCHET,https://www.youtube.com/embed/LkD2jidfjz8
+InvDec,invisible decrease,"Insert hook through front loops only of 2 stitches, pull up loop, yarn over, pull through all. Preferred for amigurumi.",DECREASE,CROCHET,https://www.youtube.com/embed/aKb9Yu1WzvQ
+dec,decrease,Generic instruction to reduce stitch count. Method specified by the pattern.,DECREASE,CROCHET,https://www.youtube.com/embed/fB64nsKHGuQ
+yo,yarn over,Wrap the yarn over the hook before or during a stitch. Fundamental crochet action.,YARN_HANDLING,CROCHET,
+yoh,yarn over hook,UK/alternative term for yarn over (yo). Wrap yarn over the hook.,YARN_HANDLING,CROCHET,
+tog,together,Work two or more stitches as one.,YARN_HANDLING,CROCHET,
+ch-sp,chain space,"The gap created by a chain stitch in the previous row, used as an insertion point.",CONSTRUCTION,CROCHET,https://www.youtube.com/embed/EKKScj8mRF8
+MR,magic ring,Adjustable starting ring for working in the round. Creates a closed center with no hole.,CONSTRUCTION,CROCHET,https://www.youtube.com/embed/z65Ru6M0q1s
+FO,fasten off,"Cut yarn, pull tail through last loop and tighten to secure the final stitch.",CONSTRUCTION,CROCHET,https://www.youtube.com/embed/-QP_q-6r6Mc
+tch,turning chain,Chain(s) worked at the start of a row to bring the hook to the correct height for the first stitch.,CONSTRUCTION,CROCHET,https://www.youtube.com/embed/MVtvSDRxqcU
+FwP,forward pass,First half of a Tunisian crochet row: pick up loops across the row.,CONSTRUCTION,CROCHET,https://www.youtube.com/embed/I3sb4T-f8dk
+RetP,return pass,Second half of a Tunisian crochet row: work off loops from hook.,CONSTRUCTION,CROCHET,https://www.youtube.com/embed/MVtvSDRxqcU
+rnd,round,One complete circuit of stitches when working in the round.,CONSTRUCTION,CROCHET,https://www.youtube.com/embed/z65Ru6M0q1s
+BLO,back loop only,Insert hook under the back loop only of the stitch. Creates a ridged texture.,TECHNIQUE,CROCHET,https://www.youtube.com/embed/pCiq2VB7jH4
+FLO,front loop only,Insert hook under the front loop only of the stitch. Creates a ridged texture.,TECHNIQUE,CROCHET,https://www.youtube.com/embed/CUsVbI7h9_w
+BL,back loop,The loop of the stitch furthest from you when the right side faces you.,TECHNIQUE,CROCHET,https://www.youtube.com/embed/pCiq2VB7jH4
+FL,front loop,The loop of the stitch closest to you when the right side faces you.,TECHNIQUE,CROCHET,https://www.youtube.com/embed/8ir3v31G0sg
+tbl,through back loop,Work through the back loop of the stitch only.,TECHNIQUE,CROCHET,https://www.youtube.com/embed/pCiq2VB7jH4
+sk,skip,Pass over the next stitch without working into it.,TECHNIQUE,CROCHET,https://www.youtube.com/embed/83C7028KqwM
+Block,blocking,Wet or steam the finished piece to set the stitches and shape the fabric.,TECHNIQUE,CROCHET,https://www.youtube.com/embed/v0Hfu0byjxs
+pm,place marker,Place a stitch marker in the current stitch to mark a specific position.,MARKER,CROCHET,
+sm,slip marker,Move the stitch marker to maintain its position.,MARKER,CROCHET,
+sl m,slip marker,Alternate abbreviation for slip marker.,MARKER,CROCHET,
+m,marker,A stitch marker used to indicate a specific position in the pattern.,MARKER,CROCHET,
+RS,right side,The public-facing or outside of the fabric.,PATTERN_STRUCTURE,CROCHET,
+WS,wrong side,The inside or back of the fabric.,PATTERN_STRUCTURE,CROCHET,
+rep,repeat,Work the bracketed or asterisked section again as many times as directed.,PATTERN_STRUCTURE,CROCHET,
+beg,beginning,The start of a row or round.,PATTERN_STRUCTURE,CROCHET,
+rem,remaining,The stitches left after working a section.,PATTERN_STRUCTURE,CROCHET,
+foll,following,Refers to the next instruction.,PATTERN_STRUCTURE,CROCHET,
+cont,continue,Carry on in the established pattern.,PATTERN_STRUCTURE,CROCHET,
+alt,alternate,Every other row or stitch.,PATTERN_STRUCTURE,CROCHET,
+approx,approximately,Not an exact measurement.,PATTERN_STRUCTURE,CROCHET,
+bet,between,In the space between two specified points.,PATTERN_STRUCTURE,CROCHET,
+pat,pattern,The established stitch pattern being worked.,PATTERN_STRUCTURE,CROCHET,
+prev,previous,The row or stitch worked before the current one.,PATTERN_STRUCTURE,CROCHET,
+sp,space,The gap created by chain stitches in the previous row.,PATTERN_STRUCTURE,CROCHET,
+st,stitch,A single worked loop.,PATTERN_STRUCTURE,CROCHET,
+lp,loop,A single loop of yarn on the hook.,PATTERN_STRUCTURE,CROCHET,
+CC,contrasting color,Secondary yarn color used in colorwork.,PATTERN_STRUCTURE,CROCHET,
+MC,main color,Primary yarn color in a colorwork project.,PATTERN_STRUCTURE,CROCHET,
+Gauge,gauge,Number of stitches and rows per inch/cm. UK term: tension.,PATTERN_STRUCTURE,CROCHET,
+ch-,chain space reference,"Refers to a chain or space previously made, e.g. ch-1 space.",PATTERN_STRUCTURE,CROCHET,

@@ -10,6 +10,7 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.main import app
 from app.schemas.auth import FirebaseRegisterRequest
+from app.services.ravelry.ravelry_exceptions import RavelryAuthError
 from app.services.user import UserAlreadyExistsError, UsernameTakenError
 
 
@@ -155,3 +156,74 @@ class TestRegister:
                 json={"firebase_token": "token123", "username": "taken"},
             )
         assert response.status_code == 409
+
+
+def _make_valid_state() -> str:
+    import time
+    from app.services.ravelry.ravelry_service import _sign_timestamp
+
+    timestamp_str = str(int(time.time()))
+    sig = _sign_timestamp(timestamp_str)
+    return f"{timestamp_str}.{sig}"
+
+
+class TestRavelryLogin:
+    def test_ravelry_login_redirects_to_ravelry(self):
+        response = client.get("/auth/ravelry/login", follow_redirects=False)
+        assert response.status_code in (302, 307)
+        assert "ravelry.com/oauth2/auth" in response.headers["location"]
+
+
+class TestRavelryCallback:
+    def test_ravelry_callback_success_redirects_to_frontend_with_token(self):
+        state = _make_valid_state()
+        mock_user = MagicMock()
+        mock_user.firebase_uid = "ravelry_knitter42"
+
+        with patch("app.routers.auth.ravelry_service") as mock_svc:
+            mock_svc.verify_state.return_value = True
+            mock_svc.exchange_code_for_token.return_value = "ravelry-token"
+            mock_svc.get_ravelry_username.return_value = "knitter42"
+            mock_svc.login_or_create_user.return_value = mock_user
+            mock_svc.create_firebase_custom_token.return_value = "firebase-custom-token"
+
+            response = client.get(
+                f"/auth/ravelry/callback?code=authcode&state={state}",
+                follow_redirects=False,
+            )
+
+        assert response.status_code in (302, 307)
+        assert "firebase-custom-token" in response.headers["location"]
+        assert "/ravelry/complete" in response.headers["location"]
+
+    def test_ravelry_callback_error_param_redirects_to_login_error(self):
+        state = _make_valid_state()
+        response = client.get(
+            f"/auth/ravelry/callback?error=access_denied&state={state}",
+            follow_redirects=False,
+        )
+        assert response.status_code in (302, 307)
+        assert "login?error=ravelry_failed" in response.headers["location"]
+
+    def test_ravelry_callback_invalid_state_redirects_to_login_error(self):
+        response = client.get(
+            "/auth/ravelry/callback?code=authcode&state=invalidsignature",
+            follow_redirects=False,
+        )
+        assert response.status_code in (302, 307)
+        assert "login?error=ravelry_failed" in response.headers["location"]
+
+    def test_ravelry_callback_exchange_failure_redirects_to_login_error(self):
+        state = _make_valid_state()
+
+        with patch("app.routers.auth.ravelry_service") as mock_svc:
+            mock_svc.verify_state.return_value = True
+            mock_svc.exchange_code_for_token.side_effect = RavelryAuthError("bad code")
+
+            response = client.get(
+                f"/auth/ravelry/callback?code=badcode&state={state}",
+                follow_redirects=False,
+            )
+
+        assert response.status_code in (302, 307)
+        assert "login?error=ravelry_failed" in response.headers["location"]
